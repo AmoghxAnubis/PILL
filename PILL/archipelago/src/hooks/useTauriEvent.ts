@@ -4,10 +4,17 @@ import type { UnlistenFn } from '@tauri-apps/api/event';
 
 /**
  * Hook to listen for Tauri backend events.
- * Automatically cleans up the listener on unmount and keeps the latest
- * handler without resubscribing on every render.
+ *
+ * The hook:
+ * - subscribes when the event name changes
+ * - keeps the latest handler without resubscribing
+ * - cleans up synchronously when possible
+ * - handles the case where listen() resolves after unmount
  */
-export function useTauriEvent<T>(eventName: string, handler: (payload: T) => void) {
+export function useTauriEvent<T>(
+  eventName: string,
+  handler: (payload: T) => void,
+): void {
   const handlerRef = useRef(handler);
 
   useEffect(() => {
@@ -18,19 +25,30 @@ export function useTauriEvent<T>(eventName: string, handler: (payload: T) => voi
     let cancelled = false;
     let unlisten: UnlistenFn | undefined;
 
-    listen<T>(eventName, (event) => {
-      handlerRef.current(event.payload);
-    })
-      .then((fn) => {
+    const registerListener = async () => {
+      try {
+        const cleanup = await listen<T>(
+          eventName,
+          (event) => {
+            handlerRef.current(event.payload);
+          },
+        );
+
         if (cancelled) {
-          fn();
-        } else {
-          unlisten = fn;
+          cleanup();
+          return;
         }
-      })
-      .catch((error) => {
-        console.error(`[Tauri] Failed to listen for ${eventName}:`, error);
-      });
+
+        unlisten = cleanup;
+      } catch (error) {
+        console.error(
+          `[Tauri] Failed to listen for ${eventName}:`,
+          error,
+        );
+      }
+    };
+
+    void registerListener();
 
     return () => {
       cancelled = true;
