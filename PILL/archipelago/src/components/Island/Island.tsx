@@ -1,18 +1,33 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+
+import { useEvasion } from '../../hooks/useEvasion';
 import { useIslandState } from '../../hooks/useIslandState';
-import { ISLAND_DIMENSIONS, SPRING_CONFIG } from '../../store/islandStore';
+import {
+  ISLAND_DIMENSIONS,
+  SPRING_CONFIG,
+  useIslandStore,
+} from '../../store/islandStore';
+
 import { IdleState } from '../states/IdleState';
 import { CompactState } from '../states/CompactState';
 import { ExpandedState } from '../states/ExpandedState';
 import { SplitState } from '../states/SplitState';
+
 import './Island.css';
 
 /**
  * Main Island container component.
- * Manages the morphing pill shape with spring-physics animations
- * and renders the appropriate state content.
+ *
+ * Manages:
+ * - Island state transitions
+ * - Spring-based size animations
+ * - Fullscreen/evasion visibility
+ * - Rendering of the appropriate state content
  */
 export function Island() {
+  // Subscribe to fullscreen/evasion events.
+  useEvasion();
+
   const {
     state,
     handleMouseEnter,
@@ -20,6 +35,10 @@ export function Island() {
     handleClick,
     handleCollapse,
   } = useIslandState();
+
+  const isEvasionActive = useIslandStore(
+    (store) => store.isEvasionActive,
+  );
 
   const dims = ISLAND_DIMENSIONS[state];
 
@@ -31,8 +50,12 @@ export function Island() {
         animate={{
           width: dims.width,
           height: dims.height,
+          opacity: isEvasionActive ? 0 : 1,
         }}
         transition={SPRING_CONFIG}
+        style={{
+          pointerEvents: isEvasionActive ? 'none' : 'auto',
+        }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onClick={state === 'compact' ? handleClick : undefined}
@@ -70,12 +93,23 @@ export function Island() {
             {state === 'expanded' && (
               <motion.div
                 key="expanded"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
+                initial={{
+                  opacity: 0,
+                  scale: 0.95,
+                }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.95,
+                }}
                 transition={{ duration: 0.2 }}
               >
-                <ExpandedState onCollapse={handleCollapse} />
+                <ExpandedState
+                  onCollapse={handleCollapse}
+                />
               </motion.div>
             )}
 

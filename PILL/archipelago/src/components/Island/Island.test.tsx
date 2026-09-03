@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Island } from './Island';
 import { useIslandStore } from '../../store/islandStore';
+import { useTauriTypedEvent } from '../../lib/tauriEvents';
 
 // Clean up the React DOM after every test so components from previous
 // tests cannot interfere with the current test.
@@ -30,18 +31,31 @@ vi.mock('../states/ExpandedState', () => ({
     </div>
   ),
 }));
+vi.mock('../../lib/tauriEvents', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../lib/tauriEvents')
+  >('../../lib/tauriEvents');
 
+  return {
+    ...actual,
+    useTauriTypedEvent: vi.fn(),
+  };
+});
 describe('Island Component', () => {
   beforeEach(() => {
-    // Reset store state before each test
-    useIslandStore.setState({
-      state: 'idle',
-      visible: true,
-      activeWidgets: [],
-    });
-
-    vi.clearAllMocks();
+  useIslandStore.setState({
+    state: 'idle',
+    visible: true,
+    isEvasionActive: false,
+    activeWidgets: [],
   });
+
+  vi.clearAllMocks();
+
+  vi.mocked(useTauriTypedEvent).mockImplementation(
+    () => undefined,
+  );
+});
 
   it('renders idle state initially', () => {
     render(<Island />);
