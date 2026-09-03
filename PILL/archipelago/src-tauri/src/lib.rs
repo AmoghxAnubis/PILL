@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, WebviewWindow};
 
+pub mod events;
 mod hwnd_controller;
 
 /// Represents the current island UI state.
