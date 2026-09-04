@@ -2,8 +2,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import { useEvasion } from '../../hooks/useEvasion';
 import { useIslandState } from '../../hooks/useIslandState';
+
 import {
   ISLAND_DIMENSIONS,
+  isIslandVisible,
   SPRING_CONFIG,
   useIslandStore,
 } from '../../store/islandStore';
@@ -21,7 +23,8 @@ import './Island.css';
  * Manages:
  * - Island state transitions
  * - Spring-based size animations
- * - Fullscreen/evasion visibility
+ * - Unified visibility state
+ * - Fullscreen/evasion behavior
  * - Rendering of the appropriate state content
  */
 export function Island() {
@@ -30,14 +33,20 @@ export function Island() {
 
   const {
     state,
+    visible,
+    isEvasionActive,
+  } = useIslandStore();
+
+  const {
     handleMouseEnter,
     handleMouseLeave,
     handleClick,
     handleCollapse,
   } = useIslandState();
 
-  const isEvasionActive = useIslandStore(
-    (store) => store.isEvasionActive,
+  const shouldShowIsland = isIslandVisible(
+    visible,
+    isEvasionActive,
   );
 
   const dims = ISLAND_DIMENSIONS[state];
@@ -50,15 +59,21 @@ export function Island() {
         animate={{
           width: dims.width,
           height: dims.height,
-          opacity: isEvasionActive ? 0 : 1,
+          opacity: shouldShowIsland ? 1 : 0,
         }}
         transition={SPRING_CONFIG}
         style={{
-          pointerEvents: isEvasionActive ? 'none' : 'auto',
+          pointerEvents: shouldShowIsland
+            ? 'auto'
+            : 'none',
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        onClick={state === 'compact' ? handleClick : undefined}
+        onClick={
+          state === 'compact'
+            ? handleClick
+            : undefined
+        }
       >
         {/* Glassmorphism background layer */}
         <div className="island__glass" />
@@ -129,4 +144,4 @@ export function Island() {
       </motion.div>
     </div>
   );
-}
+} 

@@ -328,3 +328,40 @@ describe('Island Component', () => {
     ).toBeInTheDocument();
   });
 });
+it('respects application-level visibility independently of evasion', async () => {
+  useIslandStore.setState({
+    visible: false,
+    isEvasionActive: false,
+  });
+
+  render(<Island />);
+
+  const island = document.querySelector(
+    '.island-wrapper > div',
+  ) as HTMLElement;
+
+  await waitFor(() => {
+    expect(island).toHaveStyle({
+      pointerEvents: 'none',
+    });
+  });
+});
+
+it('keeps the Island hidden when either visibility mechanism disables it', async () => {
+  useIslandStore.setState({
+    visible: false,
+    isEvasionActive: true,
+  });
+
+  render(<Island />);
+
+  const island = document.querySelector(
+    '.island-wrapper > div',
+  ) as HTMLElement;
+
+  await waitFor(() => {
+    expect(island).toHaveStyle({
+      pointerEvents: 'none',
+    });
+  });
+});

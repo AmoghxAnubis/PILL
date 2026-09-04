@@ -1,18 +1,22 @@
 import { create } from 'zustand';
 
-export type IslandState = 'idle' | 'compact' | 'expanded' | 'split';
+export type IslandState =
+  | 'idle'
+  | 'compact'
+  | 'expanded'
+  | 'split';
 
 interface IslandStore {
   /** Current visual state of the island */
   state: IslandState;
 
-  /** Whether the island is visible */
+  /** Whether the island is allowed to be visible */
   visible: boolean;
 
   /** Whether the island is hidden because a fullscreen application is active */
   isEvasionActive: boolean;
 
-  /** Active widgets to display (used for split state stacking) */
+  /** Active widgets to display */
   activeWidgets: string[];
 
   setState: (state: IslandState) => void;
@@ -20,6 +24,20 @@ interface IslandStore {
   setEvasionActive: (active: boolean) => void;
   addWidget: (widgetId: string) => void;
   removeWidget: (widgetId: string) => void;
+}
+
+/**
+ * Determines whether the Island should currently be visible.
+ *
+ * The Island is visible only when:
+ * - application-level visibility is enabled
+ * - fullscreen evasion is not active
+ */
+export function isIslandVisible(
+  visible: boolean,
+  isEvasionActive: boolean,
+): boolean {
+  return visible && !isEvasionActive;
 }
 
 /** Dimensions for each island state (in logical pixels) */
@@ -45,7 +63,7 @@ export const ISLAND_DIMENSIONS: Record<
   },
 };
 
-/** Spring physics config matching design spec: F = -k·x - c·v */
+/** Spring physics config matching design spec */
 export const SPRING_CONFIG = {
   type: 'spring' as const,
   stiffness: 400,
@@ -54,13 +72,22 @@ export const SPRING_CONFIG = {
 
 export const useIslandStore = create<IslandStore>((set) => ({
   state: 'idle',
+
   visible: true,
+
   isEvasionActive: false,
+
   activeWidgets: [],
 
-  setState: (state) => set({ state }),
+  setState: (state) =>
+    set({
+      state,
+    }),
 
-  setVisible: (visible) => set({ visible }),
+  setVisible: (visible) =>
+    set({
+      visible,
+    }),
 
   setEvasionActive: (active) =>
     set({
