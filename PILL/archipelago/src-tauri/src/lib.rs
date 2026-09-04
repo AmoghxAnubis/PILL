@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, WebviewWindow};
 
 pub mod events;
-mod evasion;
+pub mod evasion;
 mod hwnd_controller;
 /// Represents the current island UI state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

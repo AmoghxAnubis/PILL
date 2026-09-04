@@ -4,22 +4,14 @@ use serde::{Deserialize, Serialize};
 ///
 /// We deliberately keep this independent of Win32's `RECT` so the
 /// classification logic can be tested without calling Windows APIs.
+
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ScreenRect {
     pub left: i32,
     pub top: i32,
     pub right: i32,
     pub bottom: i32,
-}
-
-impl ScreenRect {
-    pub fn width(self) -> i32 {
-        self.right - self.left
-    }
-
-    pub fn height(self) -> i32 {
-        self.bottom - self.top
-    }
 }
 
 /// Determines whether a window occupies essentially the entire monitor.
@@ -77,15 +69,17 @@ fn from_win32_rect(rect: windows::Win32::Foundation::RECT) -> ScreenRect {
 /// `is_fullscreen()` classifier.
 #[cfg(target_os = "windows")]
 pub fn detect_foreground_fullscreen() -> bool {
-    use windows::Win32::UI::WindowsAndMessaging::{
-        GetForegroundWindow,
-        GetMonitorInfoW,
-        GetWindowRect,
-        MonitorFromWindow,
-        MONITOR_DEFAULTTONEAREST,
-        MONITORINFO,
-    };
+    use windows::Win32::Graphics::Gdi::{
+    GetMonitorInfoW,
+    MonitorFromWindow,
+    MONITOR_DEFAULTTONEAREST,
+    MONITORINFO,
+};
 
+use windows::Win32::UI::WindowsAndMessaging::{
+    GetForegroundWindow,
+    GetWindowRect,
+};
     unsafe {
         let foreground = GetForegroundWindow();
 
