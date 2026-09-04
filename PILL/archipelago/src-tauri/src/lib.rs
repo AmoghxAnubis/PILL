@@ -120,6 +120,10 @@ fn position_island_on_startup(app: &AppHandle) {
         .expect("island window not found");
 
     if let Ok(Some(monitor)) = window.current_monitor() {
+        let _ = hwnd_controller::set_click_through(
+    &window,
+    false,
+);
         let monitor_size = monitor.size();
         let monitor_position = monitor.position();
         let scale_factor = monitor.scale_factor();
@@ -158,9 +162,10 @@ pub fn run() {
             notify_state_change,
         ])
         .setup(|app| {
-            position_island_on_startup(app.handle());
-            Ok(())
-        })
+    position_island_on_startup(app.handle());
+    evasion::spawn_fullscreen_monitor(app.handle().clone());
+    Ok(())
+})
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

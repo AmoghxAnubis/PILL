@@ -1,11 +1,16 @@
 use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Emitter};
+
+use crate::events::{
+    FullscreenStateChanged,
+    FULLSCREEN_STATE_CHANGED,
+};
 
 /// Normalized rectangle used by the fullscreen classifier.
 ///
-/// We deliberately keep this independent of Win32's `RECT` so the
-/// classification logic can be tested without calling Windows APIs.
-
-
+/// This is intentionally independent of Win32's `RECT` so the
+/// fullscreen classification logic can be tested without calling
+/// Windows APIs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ScreenRect {
     pub left: i32,
@@ -17,7 +22,7 @@ pub struct ScreenRect {
 /// Determines whether a window occupies essentially the entire monitor.
 ///
 /// A small tolerance is allowed because some applications can have
-/// a 1-2 pixel discrepancy caused by borders, DPI handling, or rounding.
+/// a small discrepancy caused by borders, DPI handling, or rounding.
 pub fn is_fullscreen(
     window: ScreenRect,
     monitor: ScreenRect,
@@ -46,14 +51,102 @@ pub fn is_fullscreen(
 }
 
 /// Default tolerance used by fullscreen detection.
-///
-/// We intentionally keep this centralized so it can be tuned later
-/// based on real Windows applications.
 pub const FULLSCREEN_TOLERANCE: i32 = 2;
 
-/// Convert a Win32 RECT into our platform-independent rectangle.
+/// Tracks the last known fullscreen state so the native monitor
+/// only reacts when the state actually changes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EvasionState {
+    pub is_fullscreen: bool,
+}
+
+impl EvasionState {
+    /// Creates a new evasion state with fullscreen inactive.
+    pub fn new() -> Self {
+        Self {
+            is_fullscreen: false,
+        }
+    }
+
+    /// Updates the fullscreen state.
+    ///
+    /// Returns `true` when the state actually changed.
+    /// Returns `false` when the state is unchanged.
+    pub fn update(&mut self, fullscreen: bool) -> bool {
+        if self.is_fullscreen == fullscreen {
+            return false;
+        }
+
+        self.is_fullscreen = fullscreen;
+        true
+    }
+}
+
+impl Default for EvasionState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Converts a state transition into the payload expected by
+/// the frontend event bridge.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FullscreenTransition {
+    pub active: bool,
+}
+
+impl From<FullscreenTransition> for FullscreenStateChanged {
+    fn from(transition: FullscreenTransition) -> Self {
+        Self {
+            active: transition.active,
+        }
+    }
+}
+
+/// Stateful fullscreen monitor.
+///
+/// This layer is deliberately independent of Windows APIs and Tauri.
+/// That allows us to test the transition logic deterministically.
+#[derive(Debug, Default)]
+pub struct FullscreenMonitor {
+    state: EvasionState,
+}
+
+impl FullscreenMonitor {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Processes one fullscreen observation.
+    ///
+    /// Returns an event payload only when the fullscreen state changes.
+    pub fn poll(
+        &mut self,
+        fullscreen: bool,
+    ) -> Option<FullscreenStateChanged> {
+        if !self.state.update(fullscreen) {
+            return None;
+        }
+
+        Some(
+            FullscreenTransition {
+                active: fullscreen,
+            }
+            .into(),
+        )
+    }
+
+    /// Returns the current fullscreen state.
+    pub fn is_fullscreen(&self) -> bool {
+        self.state.is_fullscreen
+    }
+}
+
+/// Convert a Win32 `RECT` into our platform-independent rectangle.
 #[cfg(target_os = "windows")]
-fn from_win32_rect(rect: windows::Win32::Foundation::RECT) -> ScreenRect {
+fn from_win32_rect(
+    rect: windows::Win32::Foundation::RECT,
+) -> ScreenRect {
     ScreenRect {
         left: rect.left,
         top: rect.top,
@@ -62,24 +155,27 @@ fn from_win32_rect(rect: windows::Win32::Foundation::RECT) -> ScreenRect {
     }
 }
 
-/// Checks whether the current foreground window fills the monitor it
-/// belongs to.
+/// Checks whether the current foreground window fills the monitor
+/// it belongs to.
 ///
-/// This function is the Windows-specific adapter around the pure
+/// This is the Windows-specific adapter around the pure
 /// `is_fullscreen()` classifier.
 #[cfg(target_os = "windows")]
 pub fn detect_foreground_fullscreen() -> bool {
-    use windows::Win32::Graphics::Gdi::{
-    GetMonitorInfoW,
-    MonitorFromWindow,
-    MONITOR_DEFAULTTONEAREST,
-    MONITORINFO,
-};
+    use windows::Win32::Foundation::RECT;
 
-use windows::Win32::UI::WindowsAndMessaging::{
-    GetForegroundWindow,
-    GetWindowRect,
-};
+    use windows::Win32::Graphics::Gdi::{
+        GetMonitorInfoW,
+        MonitorFromWindow,
+        MONITORINFO,
+        MONITOR_DEFAULTTONEAREST,
+    };
+
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetForegroundWindow,
+        GetWindowRect,
+    };
+
     unsafe {
         let foreground = GetForegroundWindow();
 
@@ -87,7 +183,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
             return false;
         }
 
-        let mut window_rect = windows::Win32::Foundation::RECT::default();
+        let mut window_rect = RECT::default();
 
         if GetWindowRect(
             foreground,
@@ -98,8 +194,10 @@ use windows::Win32::UI::WindowsAndMessaging::{
             return false;
         }
 
-        let monitor =
-            MonitorFromWindow(foreground, MONITOR_DEFAULTTONEAREST);
+        let monitor = MonitorFromWindow(
+            foreground,
+            MONITOR_DEFAULTTONEAREST,
+        );
 
         if monitor.0.is_null() {
             return false;
@@ -119,10 +217,11 @@ use windows::Win32::UI::WindowsAndMessaging::{
             return false;
         }
 
-        let window_rect = from_win32_rect(window_rect);
-        let monitor_rect = from_win32_rect(
-            monitor_info.rcMonitor,
-        );
+        let window_rect =
+            from_win32_rect(window_rect);
+
+        let monitor_rect =
+            from_win32_rect(monitor_info.rcMonitor);
 
         is_fullscreen(
             window_rect,
@@ -132,9 +231,57 @@ use windows::Win32::UI::WindowsAndMessaging::{
     }
 }
 
+/// Non-Windows fallback.
+///
+/// The application is currently Windows-focused, but keeping a stub
+/// allows the Rust crate to remain compilable on other platforms.
+#[cfg(not(target_os = "windows"))]
+pub fn detect_foreground_fullscreen() -> bool {
+    false
+}
+
+/// Starts the background fullscreen monitor.
+///
+/// The monitor polls Windows at a lightweight interval and emits
+/// `fullscreen_state_changed` only when the observed state changes.
+pub fn spawn_fullscreen_monitor(app: AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        let mut monitor = FullscreenMonitor::new();
+
+        let mut interval =
+            tokio::time::interval(
+                std::time::Duration::from_millis(300),
+            );
+
+        loop {
+            interval.tick().await;
+
+            let fullscreen =
+                detect_foreground_fullscreen();
+
+            if let Some(payload) =
+                monitor.poll(fullscreen)
+            {
+                if let Err(error) =
+                    app.emit(FULLSCREEN_STATE_CHANGED, payload)
+                {
+                    eprintln!(
+                        "[Archipelago] Failed to emit fullscreen state: {}",
+                        error
+                    );
+                }
+            }
+        }
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ------------------------------------------------------------------------
+    // Fullscreen geometry tests
+    // ------------------------------------------------------------------------
 
     #[test]
     fn detects_exact_fullscreen_rect() {
@@ -260,5 +407,145 @@ mod tests {
             monitor,
             -1,
         ));
+    }
+
+    // ------------------------------------------------------------------------
+    // Evasion state tests
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn evasion_state_starts_inactive() {
+        let state = EvasionState::new();
+
+        assert!(!state.is_fullscreen);
+    }
+
+    #[test]
+    fn evasion_state_reports_activation() {
+        let mut state = EvasionState::new();
+
+        assert!(state.update(true));
+        assert!(state.is_fullscreen);
+    }
+
+    #[test]
+    fn evasion_state_does_not_report_duplicate_activation() {
+        let mut state = EvasionState::new();
+
+        assert!(state.update(true));
+        assert!(!state.update(true));
+
+        assert!(state.is_fullscreen);
+    }
+
+    #[test]
+    fn evasion_state_reports_deactivation() {
+        let mut state = EvasionState::new();
+
+        assert!(state.update(true));
+        assert!(state.update(false));
+
+        assert!(!state.is_fullscreen);
+    }
+
+    #[test]
+    fn evasion_state_does_not_report_duplicate_deactivation() {
+        let mut state = EvasionState::new();
+
+        assert!(!state.update(false));
+        assert!(!state.update(false));
+
+        assert!(!state.is_fullscreen);
+    }
+
+    // ------------------------------------------------------------------------
+    // Fullscreen monitor tests
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn monitor_starts_with_no_transition() {
+        let mut monitor = FullscreenMonitor::new();
+
+        assert!(monitor.poll(false).is_none());
+        assert!(!monitor.is_fullscreen());
+    }
+
+    #[test]
+    fn monitor_emits_activation_once() {
+        let mut monitor = FullscreenMonitor::new();
+
+        let first = monitor
+            .poll(true)
+            .expect("activation should produce an event");
+
+        assert!(first.active);
+        assert!(monitor.is_fullscreen());
+
+        assert!(
+            monitor.poll(true).is_none(),
+            "duplicate activation should not emit"
+        );
+    }
+
+    #[test]
+    fn monitor_emits_deactivation_once() {
+        let mut monitor = FullscreenMonitor::new();
+
+        assert!(monitor.poll(true).is_some());
+
+        let transition = monitor
+            .poll(false)
+            .expect("deactivation should produce an event");
+
+        assert!(!transition.active);
+        assert!(!monitor.is_fullscreen());
+
+        assert!(
+            monitor.poll(false).is_none(),
+            "duplicate deactivation should not emit"
+        );
+    }
+
+    #[test]
+    fn monitor_handles_multiple_fullscreen_transitions() {
+        let mut monitor = FullscreenMonitor::new();
+
+        assert!(monitor.poll(false).is_none());
+
+        assert_eq!(
+            monitor.poll(true),
+            Some(FullscreenStateChanged { active: true })
+        );
+
+        assert!(monitor.poll(true).is_none());
+
+        assert_eq!(
+            monitor.poll(false),
+            Some(FullscreenStateChanged { active: false })
+        );
+
+        assert!(monitor.poll(false).is_none());
+
+        assert_eq!(
+            monitor.poll(true),
+            Some(FullscreenStateChanged { active: true })
+        );
+    }
+
+    #[test]
+    fn fullscreen_transition_maps_to_event_payload() {
+        let transition = FullscreenTransition {
+            active: true,
+        };
+
+        let payload: FullscreenStateChanged =
+            transition.into();
+
+        assert_eq!(
+            payload,
+            FullscreenStateChanged {
+                active: true,
+            }
+        );
     }
 }
