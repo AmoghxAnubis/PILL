@@ -173,6 +173,8 @@ pub fn run() {
     telemetry::spawn_telemetry_monitor(
         app.handle().clone(),
     );
+    media::spawn_media_monitor(
+        app.handle().clone());
 
     Ok(())
 })
