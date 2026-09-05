@@ -18,7 +18,10 @@ function formatMediaTime(seconds: number): string {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
 
-function getProgressPercentage(position: number, duration: number): number {
+function getProgressPercentage(
+  position: number,
+  duration: number,
+): number {
   if (!Number.isFinite(position) || !Number.isFinite(duration)) {
     return 0;
   }
@@ -32,7 +35,8 @@ function getProgressPercentage(position: number, duration: number): number {
 
 /**
  * ExpandedState — The full dashboard view of the island.
- * Shows active media information, progress, and playback controls.
+ * Shows active media information, artwork, progress,
+ * and playback controls.
  */
 export function ExpandedState({ onCollapse }: ExpandedStateProps) {
   const { media, hasMedia } = useMedia();
@@ -110,9 +114,26 @@ export function ExpandedState({ onCollapse }: ExpandedStateProps) {
       {hasMedia ? (
         <div className="state-expanded__media">
           <div className="state-expanded__media-info">
+            {media.artwork ? (
+              <img
+                className="state-expanded__media-artwork"
+                src={media.artwork}
+                alt=""
+              />
+            ) : (
+              <div
+                className="state-expanded__media-artwork state-expanded__media-artwork--fallback"
+                aria-hidden="true"
+              >
+                ♪
+              </div>
+            )}
+
             <span
               className="state-expanded__media-status"
-              aria-label={media.is_playing ? 'Playing' : 'Paused'}
+              aria-label={
+                media.is_playing ? 'Playing' : 'Paused'
+              }
             >
               {media.is_playing ? '▶' : '⏸'}
             </span>

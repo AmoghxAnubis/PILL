@@ -67,27 +67,32 @@ mod windows_media {
         IRandomAccessStreamReference,
     };
 
-    /// Reads album artwork from the Windows media session and returns it
-    /// as a base64 data URL that can be consumed directly by the frontend.
-    async fn read_thumbnail(
+    /// Reads a Windows media thumbnail and converts it into a base64 data URL.
+    ///
+    /// This function is intentionally synchronous. Windows WinRT stream
+    /// objects must not be held across the `.await` points of the Tauri
+    /// polling task because that would make the task non-Send.
+    fn read_thumbnail(
         thumbnail: Option<IRandomAccessStreamReference>,
     ) -> Option<String> {
         let thumbnail = thumbnail?;
 
-        let stream = match thumbnail.OpenReadAsync() {
-            Ok(operation) => match operation.await {
-                Ok(stream) => stream,
-                Err(error) => {
-                    eprintln!(
-                        "[Archipelago][Media] Thumbnail OpenReadAsync failed: {}",
-                        error
-                    );
-                    return None;
-                }
-            },
+        let operation = match thumbnail.OpenReadAsync() {
+            Ok(operation) => operation,
             Err(error) => {
                 eprintln!(
                     "[Archipelago][Media] Failed to start thumbnail read: {}",
+                    error
+                );
+                return None;
+            }
+        };
+
+        let stream = match operation.join() {
+            Ok(stream) => stream,
+            Err(error) => {
+                eprintln!(
+                    "[Archipelago][Media] Thumbnail OpenReadAsync failed: {}",
                     error
                 );
                 return None;
@@ -105,7 +110,6 @@ mod windows_media {
             }
         };
 
-        // Prevent unexpectedly large artwork from consuming excessive memory.
         const MAX_ARTWORK_SIZE: u64 = 10 * 1024 * 1024;
 
         if size == 0 || size > MAX_ARTWORK_SIZE {
@@ -138,18 +142,18 @@ mod windows_media {
             }
         };
 
-        let bytes_to_load = size as u32;
-
-        match reader.LoadAsync(bytes_to_load) {
-            Ok(operation) => {
-                if let Err(error) = operation.await {
-                    eprintln!(
-                        "[Archipelago][Media] Failed to load thumbnail bytes: {}",
-                        error
-                    );
-                    return None;
-                }
+        let bytes_to_load = match u32::try_from(size) {
+            Ok(value) => value,
+            Err(_) => {
+                eprintln!(
+                    "[Archipelago][Media] Thumbnail is too large to load"
+                );
+                return None;
             }
+        };
+
+        let load_operation = match reader.LoadAsync(bytes_to_load) {
+            Ok(operation) => operation,
             Err(error) => {
                 eprintln!(
                     "[Archipelago][Media] Failed to start thumbnail byte load: {}",
@@ -157,6 +161,14 @@ mod windows_media {
                 );
                 return None;
             }
+        };
+
+        if let Err(error) = load_operation.join() {
+            eprintln!(
+                "[Archipelago][Media] Failed to load thumbnail bytes: {}",
+                error
+            );
+            return None;
         }
 
         let mut bytes = vec![0u8; size as usize];
@@ -174,6 +186,11 @@ mod windows_media {
         Some(format!("data:image/jpeg;base64,{encoded}"))
     }
 
+    /// Reads the active Windows media session.
+    ///
+    /// Artwork is deliberately fetched separately from the main async
+    /// session polling path so WinRT stream objects never cross an `.await`
+    /// boundary in the Tauri task.
     pub async fn read_current_session() -> Option<MediaSnapshot> {
         let operation =
             GlobalSystemMediaTransportControlsSessionManager::RequestAsync().ok()?;
@@ -274,7 +291,9 @@ mod windows_media {
 
         let thumbnail = properties.Thumbnail().ok();
 
-        let artwork = read_thumbnail(thumbnail).await;
+        // Do not hold the WinRT thumbnail reference across an async boundary.
+        // The thumbnail itself is read synchronously here.
+        let artwork = read_thumbnail(thumbnail);
 
         Some(MediaSnapshot {
             app_id,
