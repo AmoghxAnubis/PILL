@@ -196,3 +196,6 @@ html, body, #root {
 .glance-metrics__separator {
   opacity: 0.5;
 }
+.glance-metrics--warning {
+  color: #ff6b6b;
+}
