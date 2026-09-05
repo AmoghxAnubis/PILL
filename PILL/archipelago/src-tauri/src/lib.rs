@@ -4,6 +4,7 @@ use tauri::{AppHandle, Manager, WebviewWindow};
 pub mod events;
 pub mod evasion;
 pub mod telemetry;
+pub mod media;
 mod hwnd_controller;
 /// Represents the current island UI state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

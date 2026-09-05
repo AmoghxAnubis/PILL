@@ -20,6 +20,7 @@ serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 raw-window-handle = "0.6"
 windows = { version = "0.58", features = [
+    "Media_Control",
     "Win32_Foundation",
     "Win32_Graphics_Gdi",
     "Win32_UI_WindowsAndMessaging",
