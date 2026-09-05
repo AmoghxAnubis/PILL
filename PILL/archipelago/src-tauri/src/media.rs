@@ -50,18 +50,17 @@ mod windows_media {
 
     pub async fn read_current_session() -> Option<MediaSnapshot> {
         let manager =
-            GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
-                .ok()?
-                .await
-                .ok()?;
-
+    GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+        .ok()?
+        .join()
+        .ok()?;
         let session = manager.GetCurrentSession().ok()?;
 
         let properties = session
-            .TryGetMediaPropertiesAsync()
-            .ok()?
-            .await
-            .ok()?;
+    .TryGetMediaPropertiesAsync()
+    .ok()?
+    .join()
+    .ok()?;
 
         let playback = session.GetPlaybackInfo().ok()?;
         let timeline = session.GetTimelineProperties().ok()?;
