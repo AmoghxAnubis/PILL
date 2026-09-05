@@ -49,21 +49,74 @@ mod windows_media {
     };
 
     pub async fn read_current_session() -> Option<MediaSnapshot> {
-        let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
-        .ok()?
-        .await
-        .ok()?;
+        let operation =
+            GlobalSystemMediaTransportControlsSessionManager::RequestAsync().ok()?;
 
-        let session = manager.GetCurrentSession().ok()?;
+        let manager = match operation.await {
+            Ok(manager) => manager,
+            Err(error) => {
+                eprintln!(
+                    "[Archipelago][Media] RequestAsync failed: {}",
+                    error
+                );
+                return None;
+            }
+        };
 
-        let properties = session
-        .TryGetMediaPropertiesAsync()
-        .ok()?
-        .await
-        .ok()?;
+        let session = match manager.GetCurrentSession() {
+            Ok(session) => session,
+            Err(error) => {
+                eprintln!(
+                    "[Archipelago][Media] GetCurrentSession failed: {}",
+                    error
+                );
+                return None;
+            }
+        };
 
-        let playback = session.GetPlaybackInfo().ok()?;
-        let timeline = session.GetTimelineProperties().ok()?;
+        let properties_operation = match session.TryGetMediaPropertiesAsync() {
+            Ok(operation) => operation,
+            Err(error) => {
+                eprintln!(
+                    "[Archipelago][Media] TryGetMediaPropertiesAsync failed: {}",
+                    error
+                );
+                return None;
+            }
+        };
+
+        let properties = match properties_operation.await {
+            Ok(properties) => properties,
+            Err(error) => {
+                eprintln!(
+                    "[Archipelago][Media] Media properties await failed: {}",
+                    error
+                );
+                return None;
+            }
+        };
+
+        let playback = match session.GetPlaybackInfo() {
+            Ok(playback) => playback,
+            Err(error) => {
+                eprintln!(
+                    "[Archipelago][Media] GetPlaybackInfo failed: {}",
+                    error
+                );
+                return None;
+            }
+        };
+
+        let timeline = match session.GetTimelineProperties() {
+            Ok(timeline) => timeline,
+            Err(error) => {
+                eprintln!(
+                    "[Archipelago][Media] GetTimelineProperties failed: {}",
+                    error
+                );
+                return None;
+            }
+        };
 
         let title = properties.Title().unwrap_or_default().to_string();
 
@@ -105,6 +158,8 @@ mod windows_media {
 
     pub fn spawn_media_monitor(app: AppHandle) {
         tauri::async_runtime::spawn(async move {
+            println!("[Archipelago][Media] Media monitor started");
+
             let mut last_snapshot = MediaSnapshot::default();
 
             let mut interval = tokio::time::interval(Duration::from_millis(500));
@@ -113,19 +168,52 @@ mod windows_media {
             loop {
                 interval.tick().await;
 
-                let snapshot = read_current_session()
-                    .await
-                    .unwrap_or_default();
+                let snapshot = read_current_session().await;
 
-                if snapshot != last_snapshot {
-                    if let Err(error) = app.emit(MEDIA_UPDATE, snapshot.clone()) {
-                        eprintln!(
-                            "[Archipelago] Failed to emit media update: {}",
-                            error
-                        );
+                match snapshot {
+                    Some(snapshot) => {
+                        if snapshot != last_snapshot {
+                            println!(
+                                "[Archipelago][Media] Session: app_id='{}', title='{}', artist='{}', playing={}",
+                                snapshot.app_id,
+                                snapshot.title,
+                                snapshot.artist,
+                                snapshot.is_playing
+                            );
+
+                            if let Err(error) =
+                                app.emit(MEDIA_UPDATE, snapshot.clone())
+                            {
+                                eprintln!(
+                                    "[Archipelago][Media] Failed to emit media update: {}",
+                                    error
+                                );
+                            }
+
+                            last_snapshot = snapshot;
+                        }
                     }
 
-                    last_snapshot = snapshot;
+                    None => {
+                        if !last_snapshot.is_empty() {
+                            let empty_snapshot = MediaSnapshot::default();
+
+                            println!(
+                                "[Archipelago][Media] No active media session"
+                            );
+
+                            if let Err(error) =
+                                app.emit(MEDIA_UPDATE, empty_snapshot.clone())
+                            {
+                                eprintln!(
+                                    "[Archipelago][Media] Failed to emit empty media update: {}",
+                                    error
+                                );
+                            }
+
+                            last_snapshot = empty_snapshot;
+                        }
+                    }
                 }
             }
         });
@@ -137,7 +225,9 @@ mod windows_media {
     use super::*;
 
     pub fn spawn_media_monitor(_app: AppHandle) {
-        // Windows-specific media integration.
+        println!(
+            "[Archipelago][Media] Media integration is only available on Windows"
+        );
     }
 }
 
