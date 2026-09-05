@@ -3,6 +3,7 @@ use tauri::{AppHandle, Manager, WebviewWindow};
 
 pub mod events;
 pub mod evasion;
+pub mod telemetry;
 mod hwnd_controller;
 /// Represents the current island UI state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -163,7 +164,15 @@ pub fn run() {
         ])
         .setup(|app| {
     position_island_on_startup(app.handle());
-    evasion::spawn_fullscreen_monitor(app.handle().clone());
+
+    evasion::spawn_fullscreen_monitor(
+        app.handle().clone(),
+    );
+
+    telemetry::spawn_telemetry_monitor(
+        app.handle().clone(),
+    );
+
     Ok(())
 })
         .run(tauri::generate_context!())
