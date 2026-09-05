@@ -57,10 +57,122 @@ impl MediaSnapshot {
 #[cfg(target_os = "windows")]
 mod windows_media {
     use super::*;
+    use base64::Engine;
     use windows::Media::Control::{
         GlobalSystemMediaTransportControlsSessionManager,
         GlobalSystemMediaTransportControlsSessionPlaybackStatus,
     };
+    use windows::Storage::Streams::{
+        DataReader,
+        IRandomAccessStreamReference,
+    };
+
+    /// Reads album artwork from the Windows media session and returns it
+    /// as a base64 data URL that can be consumed directly by the frontend.
+    async fn read_thumbnail(
+        thumbnail: Option<IRandomAccessStreamReference>,
+    ) -> Option<String> {
+        let thumbnail = thumbnail?;
+
+        let stream = match thumbnail.OpenReadAsync() {
+            Ok(operation) => match operation.await {
+                Ok(stream) => stream,
+                Err(error) => {
+                    eprintln!(
+                        "[Archipelago][Media] Thumbnail OpenReadAsync failed: {}",
+                        error
+                    );
+                    return None;
+                }
+            },
+            Err(error) => {
+                eprintln!(
+                    "[Archipelago][Media] Failed to start thumbnail read: {}",
+                    error
+                );
+                return None;
+            }
+        };
+
+        let size = match stream.Size() {
+            Ok(size) => size,
+            Err(error) => {
+                eprintln!(
+                    "[Archipelago][Media] Failed to get thumbnail size: {}",
+                    error
+                );
+                return None;
+            }
+        };
+
+        // Prevent unexpectedly large artwork from consuming excessive memory.
+        const MAX_ARTWORK_SIZE: u64 = 10 * 1024 * 1024;
+
+        if size == 0 || size > MAX_ARTWORK_SIZE {
+            eprintln!(
+                "[Archipelago][Media] Ignoring thumbnail with size: {} bytes",
+                size
+            );
+            return None;
+        }
+
+        let input_stream = match stream.GetInputStreamAt(0) {
+            Ok(input_stream) => input_stream,
+            Err(error) => {
+                eprintln!(
+                    "[Archipelago][Media] Failed to open thumbnail input stream: {}",
+                    error
+                );
+                return None;
+            }
+        };
+
+        let reader = match DataReader::CreateDataReader(&input_stream) {
+            Ok(reader) => reader,
+            Err(error) => {
+                eprintln!(
+                    "[Archipelago][Media] Failed to create thumbnail reader: {}",
+                    error
+                );
+                return None;
+            }
+        };
+
+        let bytes_to_load = size as u32;
+
+        match reader.LoadAsync(bytes_to_load) {
+            Ok(operation) => {
+                if let Err(error) = operation.await {
+                    eprintln!(
+                        "[Archipelago][Media] Failed to load thumbnail bytes: {}",
+                        error
+                    );
+                    return None;
+                }
+            }
+            Err(error) => {
+                eprintln!(
+                    "[Archipelago][Media] Failed to start thumbnail byte load: {}",
+                    error
+                );
+                return None;
+            }
+        }
+
+        let mut bytes = vec![0u8; size as usize];
+
+        if let Err(error) = reader.ReadBytes(&mut bytes) {
+            eprintln!(
+                "[Archipelago][Media] Failed to read thumbnail bytes: {}",
+                error
+            );
+            return None;
+        }
+
+        let encoded = base64::engine::general_purpose::STANDARD.encode(bytes);
+
+        Some(format!("data:image/jpeg;base64,{encoded}"))
+    }
 
     pub async fn read_current_session() -> Option<MediaSnapshot> {
         let operation =
@@ -139,7 +251,8 @@ mod windows_media {
         let is_playing = playback
             .PlaybackStatus()
             .map(|status| {
-                status == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing
+                status
+                    == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing
             })
             .unwrap_or(false);
 
@@ -159,6 +272,10 @@ mod windows_media {
             .map(|value| value.to_string())
             .unwrap_or_default();
 
+        let thumbnail = properties.Thumbnail().ok();
+
+        let artwork = read_thumbnail(thumbnail).await;
+
         Some(MediaSnapshot {
             app_id,
             title,
@@ -166,7 +283,7 @@ mod windows_media {
             is_playing,
             duration: duration.max(0.0),
             position: position.max(0.0),
-            artwork: None,
+            artwork,
         })
     }
 
@@ -236,7 +353,9 @@ mod windows_media {
 
             let mut last_snapshot = MediaSnapshot::default();
 
-            let mut interval = tokio::time::interval(Duration::from_millis(500));
+            let mut interval =
+                tokio::time::interval(Duration::from_millis(500));
+
             interval.tick().await;
 
             loop {
