@@ -44,26 +44,25 @@ impl MediaSnapshot {
 mod windows_media {
     use super::*;
     use windows::Media::Control::{
-        GlobalSystemMediaTransportControlsSession,
         GlobalSystemMediaTransportControlsSessionManager,
         GlobalSystemMediaTransportControlsSessionPlaybackStatus,
-        use windows_future::IAsyncOperation;
     };
 
     pub async fn read_current_session() -> Option<MediaSnapshot> {
         let manager =
-    GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
-        .ok()?
-        .get()
-        .ok()?;
+            GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+                .ok()?
+                .await
+                .ok()?;
 
-let session = manager.GetCurrentSession().ok()?;
+        let session = manager.GetCurrentSession().ok()?;
 
-let properties = session
-    .TryGetMediaPropertiesAsync()
-    .ok()?
-    .get()
-    .ok()?;
+        let properties = session
+            .TryGetMediaPropertiesAsync()
+            .ok()?
+            .await
+            .ok()?;
+
         let playback = session.GetPlaybackInfo().ok()?;
         let timeline = session.GetTimelineProperties().ok()?;
 
@@ -73,12 +72,15 @@ let properties = session
         let is_playing = playback
             .PlaybackStatus()
             .map(|status| {
-                status
-                    == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing
+                status == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing
             })
             .unwrap_or(false);
 
-        let duration = timeline.EndTime().map(|value| value.Duration as f64 / 10_000_000.0).unwrap_or(0.0);
+        let duration = timeline
+            .EndTime()
+            .map(|value| value.Duration as f64 / 10_000_000.0)
+            .unwrap_or(0.0);
+
         let position = timeline
             .Position()
             .map(|value| value.Duration as f64 / 10_000_000.0)
@@ -128,12 +130,6 @@ let properties = session
             }
         });
     }
-
-    #[allow(dead_code)]
-    fn _session_type_used(
-        _session: Option<GlobalSystemMediaTransportControlsSession>,
-    ) {
-    }
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -141,7 +137,7 @@ mod windows_media {
     use super::*;
 
     pub fn spawn_media_monitor(_app: AppHandle) {
-        // Media session integration is Windows-specific.
+        // Windows-specific media integration.
     }
 }
 
