@@ -49,23 +49,24 @@ mod windows_media {
     };
 
     pub async fn read_current_session() -> Option<MediaSnapshot> {
-        let manager =
-    GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+        let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
         .ok()?
-        .join()
+        .await
         .ok()?;
+
         let session = manager.GetCurrentSession().ok()?;
 
         let properties = session
-    .TryGetMediaPropertiesAsync()
-    .ok()?
-    .join()
-    .ok()?;
+        .TryGetMediaPropertiesAsync()
+        .ok()?
+        .await
+        .ok()?;
 
         let playback = session.GetPlaybackInfo().ok()?;
         let timeline = session.GetTimelineProperties().ok()?;
 
         let title = properties.Title().unwrap_or_default().to_string();
+
         let artist = properties.Artist().unwrap_or_default().to_string();
 
         let is_playing = playback
