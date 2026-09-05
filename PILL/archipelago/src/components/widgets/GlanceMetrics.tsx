@@ -15,6 +15,8 @@ interface GlanceMetricsState {
   ram: number;
 }
 
+const TELEMETRY_WARNING_THRESHOLD = 85;
+
 export function GlanceMetrics() {
   const [metrics, setMetrics] = useState<GlanceMetricsState>({
     cpu: 0,
@@ -31,8 +33,16 @@ export function GlanceMetrics() {
     },
   );
 
+  const isWarning =
+    metrics.cpu >= TELEMETRY_WARNING_THRESHOLD ||
+    metrics.ram >= TELEMETRY_WARNING_THRESHOLD;
+
   return (
-    <div className="glance-metrics" aria-label="System telemetry">
+    <div
+      className={`glance-metrics${isWarning ? ' glance-metrics--warning' : ''}`}
+      aria-label="System telemetry"
+      data-warning={isWarning}
+    >
       <span className="glance-metrics__item">
         CPU {Math.round(metrics.cpu)}%
       </span>
