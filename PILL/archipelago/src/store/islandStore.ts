@@ -1,46 +1,21 @@
 import { create } from 'zustand';
 
-export type IslandState =
-  | 'idle'
-  | 'compact'
-  | 'expanded'
-  | 'split';
+export type IslandState = 'idle' | 'compact' | 'expanded' | 'split';
 
 interface IslandStore {
-  /** Current visual state of the island */
   state: IslandState;
-
-  /** Whether the island is allowed to be visible */
   visible: boolean;
-
-  /** Whether the island is hidden because a fullscreen application is active */
   isEvasionActive: boolean;
-
-  /** Active widgets to display */
   activeWidgets: string[];
 
   setState: (state: IslandState) => void;
   setVisible: (visible: boolean) => void;
   setEvasionActive: (active: boolean) => void;
+
   addWidget: (widgetId: string) => void;
   removeWidget: (widgetId: string) => void;
 }
 
-/**
- * Determines whether the Island should currently be visible.
- *
- * The Island is visible only when:
- * - application-level visibility is enabled
- * - fullscreen evasion is not active
- */
-export function isIslandVisible(
-  visible: boolean,
-  isEvasionActive: boolean,
-): boolean {
-  return visible && !isEvasionActive;
-}
-
-/** Dimensions for each island state (in logical pixels) */
 export const ISLAND_DIMENSIONS: Record<
   IslandState,
   { width: number; height: number }
@@ -50,7 +25,7 @@ export const ISLAND_DIMENSIONS: Record<
     height: 32,
   },
   compact: {
-    width: 220,
+    width: 300,
     height: 45,
   },
   expanded: {
@@ -63,31 +38,28 @@ export const ISLAND_DIMENSIONS: Record<
   },
 };
 
-/** Spring physics config matching design spec */
 export const SPRING_CONFIG = {
   type: 'spring' as const,
   stiffness: 400,
   damping: 30,
 };
 
+export function isIslandVisible(
+  visible: boolean,
+  isEvasionActive: boolean,
+): boolean {
+  return visible && !isEvasionActive;
+}
+
 export const useIslandStore = create<IslandStore>((set) => ({
   state: 'idle',
-
   visible: true,
-
   isEvasionActive: false,
-
   activeWidgets: [],
 
-  setState: (state) =>
-    set({
-      state,
-    }),
+  setState: (state) => set({ state }),
 
-  setVisible: (visible) =>
-    set({
-      visible,
-    }),
+  setVisible: (visible) => set({ visible }),
 
   setEvasionActive: (active) =>
     set({
@@ -95,15 +67,15 @@ export const useIslandStore = create<IslandStore>((set) => ({
     }),
 
   addWidget: (widgetId) =>
-    set((s) => ({
-      activeWidgets: s.activeWidgets.includes(widgetId)
-        ? s.activeWidgets
-        : [...s.activeWidgets, widgetId],
+    set((current) => ({
+      activeWidgets: current.activeWidgets.includes(widgetId)
+        ? current.activeWidgets
+        : [...current.activeWidgets, widgetId],
     })),
 
   removeWidget: (widgetId) =>
-    set((s) => ({
-      activeWidgets: s.activeWidgets.filter(
+    set((current) => ({
+      activeWidgets: current.activeWidgets.filter(
         (id) => id !== widgetId,
       ),
     })),
