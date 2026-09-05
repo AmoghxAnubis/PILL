@@ -38,6 +38,20 @@ impl MediaSnapshot {
             && self.position == 0.0
             && self.artwork.is_none()
     }
+
+    /// Returns true when the media session's actual content/state changed.
+    ///
+    /// Position is intentionally excluded because it changes continuously
+    /// during playback. We still emit position updates for the progress bar,
+    /// but we do not treat them as a new media session for logging purposes.
+    pub fn has_content_changed(&self, other: &Self) -> bool {
+        self.app_id != other.app_id
+            || self.title != other.title
+            || self.artist != other.artist
+            || self.is_playing != other.is_playing
+            || self.duration != other.duration
+            || self.artwork != other.artwork
+    }
 }
 
 #[cfg(target_os = "windows")]
@@ -213,9 +227,7 @@ mod windows_media {
             .TrySkipNextAsync()
             .map_err(|error| format!("TrySkipNextAsync failed: {error}"))?
             .await
-            .map_err(|error| {
-                format!("TrySkipNextAsync await failed: {error}")
-            })
+            .map_err(|error| format!("TrySkipNextAsync await failed: {error}"))
     }
 
     pub fn spawn_media_monitor(app: AppHandle) {
@@ -235,13 +247,15 @@ mod windows_media {
                 match snapshot {
                     Some(snapshot) => {
                         if snapshot != last_snapshot {
-                            println!(
-                                "[Archipelago][Media] Session: app_id='{}', title='{}', artist='{}', playing={}",
-                                snapshot.app_id,
-                                snapshot.title,
-                                snapshot.artist,
-                                snapshot.is_playing
-                            );
+                            if snapshot.has_content_changed(&last_snapshot) {
+                                println!(
+                                    "[Archipelago][Media] Session: app_id='{}', title='{}', artist='{}', playing={}",
+                                    snapshot.app_id,
+                                    snapshot.title,
+                                    snapshot.artist,
+                                    snapshot.is_playing
+                                );
+                            }
 
                             if let Err(error) =
                                 app.emit(MEDIA_UPDATE, snapshot.clone())
@@ -372,5 +386,65 @@ mod tests {
         assert!(snapshot.is_playing);
         assert_eq!(snapshot.duration, 245.5);
         assert_eq!(snapshot.position, 42.25);
+    }
+
+    #[test]
+    fn position_only_change_is_not_content_change() {
+        let original = MediaSnapshot {
+            app_id: "Spotify.exe".to_string(),
+            title: "Test Song".to_string(),
+            artist: "Test Artist".to_string(),
+            is_playing: true,
+            duration: 240.0,
+            position: 30.0,
+            artwork: None,
+        };
+
+        let updated = MediaSnapshot {
+            position: 31.0,
+            ..original.clone()
+        };
+
+        assert!(!updated.has_content_changed(&original));
+    }
+
+    #[test]
+    fn track_change_is_content_change() {
+        let original = MediaSnapshot {
+            app_id: "Spotify.exe".to_string(),
+            title: "Song One".to_string(),
+            artist: "Artist".to_string(),
+            is_playing: true,
+            duration: 240.0,
+            position: 30.0,
+            artwork: None,
+        };
+
+        let updated = MediaSnapshot {
+            title: "Song Two".to_string(),
+            ..original.clone()
+        };
+
+        assert!(updated.has_content_changed(&original));
+    }
+
+    #[test]
+    fn playback_state_change_is_content_change() {
+        let original = MediaSnapshot {
+            app_id: "Spotify.exe".to_string(),
+            title: "Test Song".to_string(),
+            artist: "Test Artist".to_string(),
+            is_playing: true,
+            duration: 240.0,
+            position: 30.0,
+            artwork: None,
+        };
+
+        let updated = MediaSnapshot {
+            is_playing: false,
+            ..original.clone()
+        };
+
+        assert!(updated.has_content_changed(&original));
     }
 }

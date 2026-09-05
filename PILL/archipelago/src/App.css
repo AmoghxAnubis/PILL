@@ -334,3 +334,39 @@ body,
 .state-expanded__control--primary:hover {
   background: rgba(255, 255, 255, 0.18);
 }
+/* ---- Expanded Media Progress ---- */
+
+.state-expanded__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.state-expanded__progress-track {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.state-expanded__progress-fill {
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.8);
+  transition: width 0.35s linear;
+}
+
+.state-expanded__progress-times {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 9px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.4);
+  font-variant-numeric: tabular-nums;
+}
