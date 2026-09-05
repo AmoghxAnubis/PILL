@@ -24,8 +24,11 @@ export function CompactState() {
           className="state-compact__media"
           title={`${media.title} — ${media.artist}`}
         >
-          <span className="state-compact__media-icon" aria-hidden="true">
-            ▶
+          <span
+            className="state-compact__media-icon"
+            aria-label={media.is_playing ? 'Playing' : 'Paused'}
+          >
+            {media.is_playing ? '▶' : '⏸'}
           </span>
 
           <span className="state-compact__media-title">
