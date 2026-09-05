@@ -3,9 +3,11 @@ use tauri::{AppHandle, Manager, WebviewWindow};
 
 pub mod events;
 pub mod evasion;
-pub mod telemetry;
 pub mod media;
+pub mod telemetry;
+
 mod hwnd_controller;
+
 /// Represents the current island UI state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum IslandState {
@@ -114,6 +116,22 @@ fn notify_state_change(state: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Control the active Windows media session.
+#[tauri::command]
+async fn media_skip_previous() -> Result<bool, String> {
+    media::skip_previous().await
+}
+
+#[tauri::command]
+async fn media_toggle_play_pause() -> Result<bool, String> {
+    media::toggle_play_pause().await
+}
+
+#[tauri::command]
+async fn media_skip_next() -> Result<bool, String> {
+    media::skip_next().await
+}
+
 /// Position the island at the top-center of the monitor
 /// where the window currently resides.
 fn position_island_on_startup(app: &AppHandle) {
@@ -123,9 +141,10 @@ fn position_island_on_startup(app: &AppHandle) {
 
     if let Ok(Some(monitor)) = window.current_monitor() {
         let _ = hwnd_controller::set_click_through(
-    &window,
-    false,
-);
+            &window,
+            false,
+        );
+
         let monitor_size = monitor.size();
         let monitor_position = monitor.position();
         let scale_factor = monitor.scale_factor();
@@ -162,22 +181,27 @@ pub fn run() {
             resize_island,
             set_click_through,
             notify_state_change,
+            media_skip_previous,
+            media_toggle_play_pause,
+            media_skip_next,
         ])
         .setup(|app| {
-    position_island_on_startup(app.handle());
+            position_island_on_startup(app.handle());
 
-    evasion::spawn_fullscreen_monitor(
-        app.handle().clone(),
-    );
+            evasion::spawn_fullscreen_monitor(
+                app.handle().clone(),
+            );
 
-    telemetry::spawn_telemetry_monitor(
-        app.handle().clone(),
-    );
-    media::spawn_media_monitor(
-        app.handle().clone());
+            telemetry::spawn_telemetry_monitor(
+                app.handle().clone(),
+            );
 
-    Ok(())
-})
+            media::spawn_media_monitor(
+                app.handle().clone(),
+            );
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

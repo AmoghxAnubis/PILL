@@ -156,6 +156,68 @@ mod windows_media {
         })
     }
 
+    pub async fn skip_previous() -> Result<bool, String> {
+        let manager =
+            GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+                .map_err(|error| format!("RequestAsync failed: {error}"))?
+                .await
+                .map_err(|error| format!("RequestAsync await failed: {error}"))?;
+
+        let session = manager
+            .GetCurrentSession()
+            .map_err(|error| format!("GetCurrentSession failed: {error}"))?;
+
+        session
+            .TrySkipPreviousAsync()
+            .map_err(|error| format!("TrySkipPreviousAsync failed: {error}"))?
+            .await
+            .map_err(|error| {
+                format!("TrySkipPreviousAsync await failed: {error}")
+            })
+    }
+
+    pub async fn toggle_play_pause() -> Result<bool, String> {
+        let manager =
+            GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+                .map_err(|error| format!("RequestAsync failed: {error}"))?
+                .await
+                .map_err(|error| format!("RequestAsync await failed: {error}"))?;
+
+        let session = manager
+            .GetCurrentSession()
+            .map_err(|error| format!("GetCurrentSession failed: {error}"))?;
+
+        session
+            .TryTogglePlayPauseAsync()
+            .map_err(|error| {
+                format!("TryTogglePlayPauseAsync failed: {error}")
+            })?
+            .await
+            .map_err(|error| {
+                format!("TryTogglePlayPauseAsync await failed: {error}")
+            })
+    }
+
+    pub async fn skip_next() -> Result<bool, String> {
+        let manager =
+            GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+                .map_err(|error| format!("RequestAsync failed: {error}"))?
+                .await
+                .map_err(|error| format!("RequestAsync await failed: {error}"))?;
+
+        let session = manager
+            .GetCurrentSession()
+            .map_err(|error| format!("GetCurrentSession failed: {error}"))?;
+
+        session
+            .TrySkipNextAsync()
+            .map_err(|error| format!("TrySkipNextAsync failed: {error}"))?
+            .await
+            .map_err(|error| {
+                format!("TrySkipNextAsync await failed: {error}")
+            })
+    }
+
     pub fn spawn_media_monitor(app: AppHandle) {
         tauri::async_runtime::spawn(async move {
             println!("[Archipelago][Media] Media monitor started");
@@ -229,10 +291,34 @@ mod windows_media {
             "[Archipelago][Media] Media integration is only available on Windows"
         );
     }
+
+    pub async fn skip_previous() -> Result<bool, String> {
+        Err("Media controls are only available on Windows".to_string())
+    }
+
+    pub async fn toggle_play_pause() -> Result<bool, String> {
+        Err("Media controls are only available on Windows".to_string())
+    }
+
+    pub async fn skip_next() -> Result<bool, String> {
+        Err("Media controls are only available on Windows".to_string())
+    }
 }
 
 pub fn spawn_media_monitor(app: AppHandle) {
     windows_media::spawn_media_monitor(app);
+}
+
+pub async fn skip_previous() -> Result<bool, String> {
+    windows_media::skip_previous().await
+}
+
+pub async fn toggle_play_pause() -> Result<bool, String> {
+    windows_media::toggle_play_pause().await
+}
+
+pub async fn skip_next() -> Result<bool, String> {
+    windows_media::skip_next().await
 }
 
 #[cfg(test)]
