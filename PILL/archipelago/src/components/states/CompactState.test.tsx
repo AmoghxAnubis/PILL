@@ -152,7 +152,7 @@ describe('CompactState', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('shows the focus timer when a timer is active', () => {
+  it('shows the focus timer when running', () => {
     mockedUseMedia.mockReturnValue({
       media: {
         app_id: '',
@@ -171,6 +171,62 @@ describe('CompactState', () => {
       secondsRemaining: 1490,
       isRunning: true,
       status: 'running',
+    });
+
+    render(<CompactState />);
+
+    expect(
+      screen.getByTestId('focus-timer'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the focus timer when paused at 25 minutes', () => {
+    mockedUseMedia.mockReturnValue({
+      media: {
+        app_id: '',
+        title: '',
+        artist: '',
+        is_playing: false,
+        duration: 0,
+        position: 0,
+        artwork: null,
+      },
+      hasMedia: false,
+    });
+
+    mockedUseFocusTimer.mockReturnValue({
+      ...defaultTimerState,
+      secondsRemaining: 1500,
+      isRunning: false,
+      status: 'paused',
+    });
+
+    render(<CompactState />);
+
+    expect(
+      screen.getByTestId('focus-timer'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the focus timer when completed', () => {
+    mockedUseMedia.mockReturnValue({
+      media: {
+        app_id: '',
+        title: '',
+        artist: '',
+        is_playing: false,
+        duration: 0,
+        position: 0,
+        artwork: null,
+      },
+      hasMedia: false,
+    });
+
+    mockedUseFocusTimer.mockReturnValue({
+      ...defaultTimerState,
+      secondsRemaining: 0,
+      isRunning: false,
+      status: 'completed',
     });
 
     render(<CompactState />);

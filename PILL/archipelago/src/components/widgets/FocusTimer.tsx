@@ -13,6 +13,7 @@ export function FocusTimer() {
   const {
     secondsRemaining,
     isRunning,
+    status,
     start,
     pause,
     reset,
@@ -26,24 +27,35 @@ export function FocusTimer() {
     }
   };
 
+  const isCompleted = status === 'completed';
+
   return (
     <div
-      className="focus-timer"
+      className={`focus-timer${
+        isCompleted ? ' focus-timer--completed' : ''
+      }`}
       aria-label="Focus timer"
+      data-status={status}
     >
       <div className="focus-timer__display">
         {formatTimer(secondsRemaining)}
       </div>
 
       <div className="focus-timer__controls">
-        <button
-          type="button"
-          className="focus-timer__button"
-          onClick={handleToggle}
-          aria-label={isRunning ? 'Pause focus timer' : 'Start focus timer'}
-        >
-          {isRunning ? 'Ⅱ' : '▶'}
-        </button>
+        {!isCompleted && (
+          <button
+            type="button"
+            className="focus-timer__button"
+            onClick={handleToggle}
+            aria-label={
+              isRunning
+                ? 'Pause focus timer'
+                : 'Start focus timer'
+            }
+          >
+            {isRunning ? 'Ⅱ' : '▶'}
+          </button>
+        )}
 
         <button
           type="button"

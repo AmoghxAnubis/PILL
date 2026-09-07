@@ -446,4 +446,14 @@ body,
 .focus-timer__button:focus-visible {
   outline: 1px solid rgba(255, 255, 255, 0.5);
   outline-offset: 2px;
+}.focus-timer--completed {
+  opacity: 0.7;
+}
+
+.focus-timer[data-status='paused'] .focus-timer__display {
+  opacity: 0.72;
+}
+
+.focus-timer[data-status='completed'] .focus-timer__display {
+  opacity: 0.6;
 }

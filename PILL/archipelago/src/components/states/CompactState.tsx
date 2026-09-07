@@ -8,14 +8,11 @@ import { useFocusTimer } from '../../hooks/useFocusTimer';
 import { GlanceMetrics } from '../widgets/GlanceMetrics';
 import { FocusTimer } from '../widgets/FocusTimer';
 
-const DEFAULT_FOCUS_DURATION_SECS = 25 * 60;
-
 export function CompactState() {
   const { media, hasMedia } = useMedia();
-  const { secondsRemaining, isRunning } = useFocusTimer();
+  const { status } = useFocusTimer();
 
-  const showFocusTimer =
-    isRunning || secondsRemaining < DEFAULT_FOCUS_DURATION_SECS;
+  const showFocusTimer = status !== 'idle';
 
   return (
     <div
