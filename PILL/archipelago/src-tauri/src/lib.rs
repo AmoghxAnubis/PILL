@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager, WebviewWindow};
+use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
 pub mod events;
 pub mod evasion;
+pub mod focus_timer;
 pub mod media;
 pub mod telemetry;
 
@@ -132,6 +133,54 @@ async fn media_skip_next() -> Result<bool, String> {
     media::skip_next().await
 }
 
+/// Start the focus timer.
+#[tauri::command]
+fn start_focus_timer(
+    app: AppHandle,
+    timer: tauri::State<'_, focus_timer::FocusTimer>,
+) -> Result<focus_timer::TimerSnapshot, String> {
+    let snapshot = timer.start();
+
+    app.emit(events::TIMER_TICK, snapshot)
+        .map_err(|error| {
+            format!("Failed to emit timer update: {error}")
+        })?;
+
+    Ok(snapshot)
+}
+
+/// Pause the focus timer.
+#[tauri::command]
+fn pause_focus_timer(
+    app: AppHandle,
+    timer: tauri::State<'_, focus_timer::FocusTimer>,
+) -> Result<focus_timer::TimerSnapshot, String> {
+    let snapshot = timer.pause();
+
+    app.emit(events::TIMER_TICK, snapshot)
+        .map_err(|error| {
+            format!("Failed to emit timer update: {error}")
+        })?;
+
+    Ok(snapshot)
+}
+
+/// Reset the focus timer to its default duration.
+#[tauri::command]
+fn reset_focus_timer(
+    app: AppHandle,
+    timer: tauri::State<'_, focus_timer::FocusTimer>,
+) -> Result<focus_timer::TimerSnapshot, String> {
+    let snapshot = timer.reset();
+
+    app.emit(events::TIMER_TICK, snapshot)
+        .map_err(|error| {
+            format!("Failed to emit timer update: {error}")
+        })?;
+
+    Ok(snapshot)
+}
+
 /// Position the island at the top-center of the monitor
 /// where the window currently resides.
 fn position_island_on_startup(app: &AppHandle) {
@@ -184,9 +233,16 @@ pub fn run() {
             media_skip_previous,
             media_toggle_play_pause,
             media_skip_next,
+            start_focus_timer,
+            pause_focus_timer,
+            reset_focus_timer,
         ])
         .setup(|app| {
             position_island_on_startup(app.handle());
+
+            let focus_timer = focus_timer::FocusTimer::new();
+
+            app.manage(focus_timer.clone());
 
             evasion::spawn_fullscreen_monitor(
                 app.handle().clone(),
@@ -198,6 +254,11 @@ pub fn run() {
 
             media::spawn_media_monitor(
                 app.handle().clone(),
+            );
+
+            focus_timer::spawn_focus_timer_monitor(
+                app.handle().clone(),
+                focus_timer,
             );
 
             Ok(())
