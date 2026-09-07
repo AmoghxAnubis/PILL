@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+
 import {
   useIslandStore,
   ISLAND_DIMENSIONS,
@@ -13,6 +14,7 @@ import {
  * - Island state changes
  * - native window resizing
  * - backend state notifications
+ * - transition cleanup
  *
  * The Island remains natively interactive during normal operation.
  * Native click-through is reserved for fullscreen evasion.
@@ -28,6 +30,10 @@ export function useIslandState() {
    */
   const transitionTo = useCallback(
     async (newState: IslandState) => {
+      if (state === newState) {
+        return;
+      }
+
       // Clear any pending auto-collapse.
       if (collapseTimerRef.current) {
         clearTimeout(collapseTimerRef.current);
@@ -67,7 +73,7 @@ export function useIslandState() {
         );
       }
     },
-    [setState],
+    [setState, state],
   );
 
   /**
@@ -80,7 +86,7 @@ export function useIslandState() {
       }
 
       collapseTimerRef.current = setTimeout(() => {
-        transitionTo('idle');
+        void transitionTo('idle');
       }, delayMs);
     },
     [transitionTo],
@@ -88,37 +94,49 @@ export function useIslandState() {
 
   /**
    * Handle mouse enter — transition from idle to compact.
+   *
+   * Split mode is owned by the widget orchestration layer and
+   * should not be overridden by mouse interaction.
    */
   const handleMouseEnter = useCallback(() => {
     if (state === 'idle') {
-      transitionTo('compact');
+      void transitionTo('compact');
     }
   }, [state, transitionTo]);
 
   /**
    * Handle mouse leave — transition from compact back to idle.
+   *
+   * Split mode is unaffected because it is not collapsed by
+   * mouse-leave events.
    */
   const handleMouseLeave = useCallback(() => {
     if (state === 'compact') {
-      transitionTo('idle');
+      void transitionTo('idle');
     }
   }, [state, transitionTo]);
 
   /**
    * Handle click — transition from compact to expanded.
+   *
+   * Split mode is intentionally not expanded through this path.
    */
   const handleClick = useCallback(() => {
     if (state === 'compact') {
-      transitionTo('expanded');
+      void transitionTo('expanded');
     }
   }, [state, transitionTo]);
 
   /**
-   * Handle collapse — transition from expanded/split to idle.
+   * Handle collapse.
+   *
+   * Expanded mode can be collapsed normally.
+   * Split mode is managed by widget orchestration and therefore
+   * cannot be manually collapsed while it is active.
    */
   const handleCollapse = useCallback(() => {
-    if (state === 'expanded' || state === 'split') {
-      transitionTo('idle');
+    if (state === 'expanded') {
+      void transitionTo('idle');
     }
   }, [state, transitionTo]);
 

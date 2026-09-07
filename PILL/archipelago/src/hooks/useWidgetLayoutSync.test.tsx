@@ -10,16 +10,35 @@ import {
 
 import { useWidgetLayoutSync } from './useWidgetLayoutSync';
 import { useWidgetOrchestrator } from './useWidgetOrchestrator';
+import { useIslandState } from './useIslandState';
 import { useIslandStore } from '../store/islandStore';
 
 vi.mock('./useWidgetOrchestrator', () => ({
   useWidgetOrchestrator: vi.fn(),
 }));
 
+vi.mock('./useIslandState', () => ({
+  useIslandState: vi.fn(),
+}));
+
 describe('useWidgetLayoutSync', () => {
+  const transitionTo = vi.fn();
+
   beforeEach(() => {
     useIslandStore.setState({
       state: 'idle',
+    });
+
+    transitionTo.mockReset();
+
+    vi.mocked(useIslandState).mockReturnValue({
+      state: 'idle',
+      transitionTo,
+      scheduleCollapse: vi.fn(),
+      handleMouseEnter: vi.fn(),
+      handleMouseLeave: vi.fn(),
+      handleClick: vi.fn(),
+      handleCollapse: vi.fn(),
     });
 
     vi.clearAllMocks();
@@ -29,7 +48,7 @@ describe('useWidgetLayoutSync', () => {
     vi.restoreAllMocks();
   });
 
-  it('does not change normal island state for no active layout', () => {
+  it('does not transition for no active layout', () => {
     vi.mocked(useWidgetOrchestrator).mockReturnValue({
       layout: 'none',
       primary: null,
@@ -38,14 +57,22 @@ describe('useWidgetLayoutSync', () => {
 
     renderHook(() => useWidgetLayoutSync());
 
-    expect(
-      useIslandStore.getState().state,
-    ).toBe('idle');
+    expect(transitionTo).not.toHaveBeenCalled();
   });
 
-  it('does not change normal island state for a single widget', () => {
+  it('does not transition for a single widget', () => {
     useIslandStore.setState({
       state: 'compact',
+    });
+
+    vi.mocked(useIslandState).mockReturnValue({
+      state: 'compact',
+      transitionTo,
+      scheduleCollapse: vi.fn(),
+      handleMouseEnter: vi.fn(),
+      handleMouseLeave: vi.fn(),
+      handleClick: vi.fn(),
+      handleCollapse: vi.fn(),
     });
 
     vi.mocked(useWidgetOrchestrator).mockReturnValue({
@@ -56,14 +83,22 @@ describe('useWidgetLayoutSync', () => {
 
     renderHook(() => useWidgetLayoutSync());
 
-    expect(
-      useIslandStore.getState().state,
-    ).toBe('compact');
+    expect(transitionTo).not.toHaveBeenCalled();
   });
 
-  it('enters split mode when multiple widgets are active', async () => {
+  it('transitions into split mode when multiple widgets are active', () => {
     useIslandStore.setState({
       state: 'compact',
+    });
+
+    vi.mocked(useIslandState).mockReturnValue({
+      state: 'compact',
+      transitionTo,
+      scheduleCollapse: vi.fn(),
+      handleMouseEnter: vi.fn(),
+      handleMouseLeave: vi.fn(),
+      handleClick: vi.fn(),
+      handleCollapse: vi.fn(),
     });
 
     vi.mocked(useWidgetOrchestrator).mockReturnValue({
@@ -74,18 +109,26 @@ describe('useWidgetLayoutSync', () => {
 
     renderHook(() => useWidgetLayoutSync());
 
-    await vi.waitFor(() => {
-      expect(
-        useIslandStore.getState().state,
-      ).toBe('split');
-    });
+    expect(transitionTo).toHaveBeenCalledWith(
+      'split',
+    );
   });
 
-  it('enters split mode from expanded state', async () => {
+  it('transitions from expanded to split when multiple widgets become active', () => {
     useIslandStore.setState({
       state: 'expanded',
     });
 
+    vi.mocked(useIslandState).mockReturnValue({
+      state: 'expanded',
+      transitionTo,
+      scheduleCollapse: vi.fn(),
+      handleMouseEnter: vi.fn(),
+      handleMouseLeave: vi.fn(),
+      handleClick: vi.fn(),
+      handleCollapse: vi.fn(),
+    });
+
     vi.mocked(useWidgetOrchestrator).mockReturnValue({
       layout: 'split',
       primary: 'focusTimer',
@@ -94,16 +137,24 @@ describe('useWidgetLayoutSync', () => {
 
     renderHook(() => useWidgetLayoutSync());
 
-    await vi.waitFor(() => {
-      expect(
-        useIslandStore.getState().state,
-      ).toBe('split');
-    });
+    expect(transitionTo).toHaveBeenCalledWith(
+      'split',
+    );
   });
 
-  it('restores compact mode when split is no longer required', async () => {
+  it('restores compact mode when split is no longer required', () => {
     useIslandStore.setState({
       state: 'split',
+    });
+
+    vi.mocked(useIslandState).mockReturnValue({
+      state: 'split',
+      transitionTo,
+      scheduleCollapse: vi.fn(),
+      handleMouseEnter: vi.fn(),
+      handleMouseLeave: vi.fn(),
+      handleClick: vi.fn(),
+      handleCollapse: vi.fn(),
     });
 
     vi.mocked(useWidgetOrchestrator).mockReturnValue({
@@ -114,10 +165,8 @@ describe('useWidgetLayoutSync', () => {
 
     renderHook(() => useWidgetLayoutSync());
 
-    await vi.waitFor(() => {
-      expect(
-        useIslandStore.getState().state,
-      ).toBe('compact');
-    });
+    expect(transitionTo).toHaveBeenCalledWith(
+      'compact',
+    );
   });
 });
