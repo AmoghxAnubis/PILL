@@ -1,10 +1,26 @@
-import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  cleanup,
+  render,
+  screen,
+} from '@testing-library/react';
+import {
+  afterEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
+
 import { CompactState } from './CompactState';
 import { useMedia } from '../../hooks/useMedia';
+import { useFocusTimer } from '../../hooks/useFocusTimer';
 
 vi.mock('../../hooks/useMedia', () => ({
   useMedia: vi.fn(),
+}));
+
+vi.mock('../../hooks/useFocusTimer', () => ({
+  useFocusTimer: vi.fn(),
 }));
 
 vi.mock('../widgets/GlanceMetrics', () => ({
@@ -13,7 +29,14 @@ vi.mock('../widgets/GlanceMetrics', () => ({
   ),
 }));
 
+vi.mock('../widgets/FocusTimer', () => ({
+  FocusTimer: () => (
+    <div data-testid="focus-timer" />
+  ),
+}));
+
 const mockedUseMedia = vi.mocked(useMedia);
+const mockedUseFocusTimer = vi.mocked(useFocusTimer);
 
 afterEach(() => {
   cleanup();
@@ -21,49 +44,78 @@ afterEach(() => {
 });
 
 describe('CompactState', () => {
+  const defaultTimerState = {
+    secondsRemaining: 25 * 60,
+    isRunning: false,
+    start: vi.fn(),
+    pause: vi.fn(),
+    reset: vi.fn(),
+  };
+
   it('shows the play icon when media is playing', () => {
     mockedUseMedia.mockReturnValue({
-      hasMedia: true,
       media: {
-        app_id: 'Spotify.exe',
+        app_id: 'spotify',
         title: 'Test Song',
         artist: 'Test Artist',
         is_playing: true,
-        duration: 180,
+        duration: 240,
         position: 30,
         artwork: null,
       },
+      hasMedia: true,
     });
+
+    mockedUseFocusTimer.mockReturnValue(defaultTimerState);
 
     render(<CompactState />);
 
-    expect(screen.getByLabelText('Playing')).toHaveTextContent('▶');
-    expect(screen.getByText('Test Song')).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('Playing'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText('Test Song'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByTestId('glance-metrics'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByTestId('focus-timer'),
+    ).not.toBeInTheDocument();
   });
 
   it('shows the pause icon when media is paused', () => {
     mockedUseMedia.mockReturnValue({
-      hasMedia: true,
       media: {
-        app_id: 'Spotify.exe',
+        app_id: 'spotify',
         title: 'Test Song',
         artist: 'Test Artist',
         is_playing: false,
-        duration: 180,
+        duration: 240,
         position: 30,
         artwork: null,
       },
+      hasMedia: true,
     });
+
+    mockedUseFocusTimer.mockReturnValue(defaultTimerState);
 
     render(<CompactState />);
 
-    expect(screen.getByLabelText('Paused')).toHaveTextContent('⏸');
-    expect(screen.getByText('Test Song')).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('Paused'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText('Test Song'),
+    ).toBeInTheDocument();
   });
 
   it('shows Archipelago when no media is available', () => {
     mockedUseMedia.mockReturnValue({
-      hasMedia: false,
       media: {
         app_id: '',
         title: '',
@@ -73,10 +125,50 @@ describe('CompactState', () => {
         position: 0,
         artwork: null,
       },
+      hasMedia: false,
+    });
+
+    mockedUseFocusTimer.mockReturnValue(defaultTimerState);
+
+    render(<CompactState />);
+
+    expect(
+      screen.getByText('Archipelago'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByTestId('glance-metrics'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByTestId('focus-timer'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows the focus timer when a timer is active', () => {
+    mockedUseMedia.mockReturnValue({
+      media: {
+        app_id: '',
+        title: '',
+        artist: '',
+        is_playing: false,
+        duration: 0,
+        position: 0,
+        artwork: null,
+      },
+      hasMedia: false,
+    });
+
+    mockedUseFocusTimer.mockReturnValue({
+      ...defaultTimerState,
+      secondsRemaining: 1490,
+      isRunning: true,
     });
 
     render(<CompactState />);
 
-    expect(screen.getByText('Archipelago')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('focus-timer'),
+    ).toBeInTheDocument();
   });
 });

@@ -1,13 +1,21 @@
 /**
  * CompactState — The hover/glance state of the island.
- * Shows live telemetry and active media information.
+ * Shows live telemetry, active media, and an active focus timer.
  */
 
 import { useMedia } from '../../hooks/useMedia';
+import { useFocusTimer } from '../../hooks/useFocusTimer';
 import { GlanceMetrics } from '../widgets/GlanceMetrics';
+import { FocusTimer } from '../widgets/FocusTimer';
+
+const DEFAULT_FOCUS_DURATION_SECS = 25 * 60;
 
 export function CompactState() {
   const { media, hasMedia } = useMedia();
+  const { secondsRemaining, isRunning } = useFocusTimer();
+
+  const showFocusTimer =
+    isRunning || secondsRemaining < DEFAULT_FOCUS_DURATION_SECS;
 
   return (
     <div
@@ -36,8 +44,12 @@ export function CompactState() {
           </span>
         </div>
       ) : (
-        <span className="state-compact__label">Archipelago</span>
+        <span className="state-compact__label">
+          Archipelago
+        </span>
       )}
+
+      {showFocusTimer && <FocusTimer />}
 
       <GlanceMetrics />
     </div>
