@@ -6,6 +6,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+
 import {
   afterEach,
   beforeEach,
@@ -16,11 +17,14 @@ import {
 } from 'vitest';
 
 import { Island } from './Island';
+
 import { useIslandStore } from '../../store/islandStore';
+
 import {
   useTauriTypedEvent,
   type FullscreenStateChanged,
 } from '../../lib/tauriEvents';
+
 import { useWidgetOrchestrator } from '../../hooks/useWidgetOrchestrator';
 
 // -----------------------------------------------------------------------------
@@ -32,7 +36,7 @@ afterEach(() => {
 });
 
 // -----------------------------------------------------------------------------
-// Tauri / hook mocks
+// Tauri / application hook mocks
 // -----------------------------------------------------------------------------
 
 vi.mock('../../hooks/useWidgetActivity', () => ({
@@ -41,6 +45,10 @@ vi.mock('../../hooks/useWidgetActivity', () => ({
 
 vi.mock('../../hooks/useWidgetLayoutSync', () => ({
   useWidgetLayoutSync: vi.fn(),
+}));
+
+vi.mock('../../hooks/useFeatureCoordinator', () => ({
+  useFeatureCoordinator: vi.fn(),
 }));
 
 vi.mock('../../hooks/useWidgetOrchestrator', () => ({
@@ -202,12 +210,10 @@ describe('Island Component', () => {
 
     render(<Island />);
 
-    const collapseButton = screen.getByRole(
-      'button',
-      {
+    const collapseButton =
+      screen.getByRole('button', {
         name: 'Collapse',
-      },
-    );
+      });
 
     fireEvent.click(collapseButton);
 
@@ -231,8 +237,22 @@ describe('Island Component', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Widget orchestrator integration tests
+  // Application hook integration
   // ---------------------------------------------------------------------------
+
+  it('mounts the feature coordinator', async () => {
+    const {
+      useFeatureCoordinator,
+    } = await import(
+      '../../hooks/useFeatureCoordinator'
+    );
+
+    render(<Island />);
+
+    expect(
+      useFeatureCoordinator,
+    ).toHaveBeenCalled();
+  });
 
   it('consumes the widget orchestrator', () => {
     render(<Island />);
@@ -243,7 +263,9 @@ describe('Island Component', () => {
   });
 
   it('reads the current widget orchestration from the hook', () => {
-    vi.mocked(useWidgetOrchestrator).mockReturnValue({
+    vi.mocked(
+      useWidgetOrchestrator,
+    ).mockReturnValue({
       layout: 'split',
       primary: 'focusTimer',
       secondary: 'media',
@@ -309,7 +331,8 @@ describe('Island Component', () => {
 
     await waitFor(() => {
       expect(
-        useIslandStore.getState().isEvasionActive,
+        useIslandStore.getState()
+          .isEvasionActive,
       ).toBe(true);
 
       expect(island).toHaveStyle({
@@ -341,7 +364,8 @@ describe('Island Component', () => {
 
     await waitFor(() => {
       expect(
-        useIslandStore.getState().isEvasionActive,
+        useIslandStore.getState()
+          .isEvasionActive,
       ).toBe(false);
 
       expect(island).toHaveStyle({
@@ -371,7 +395,8 @@ describe('Island Component', () => {
 
     await waitFor(() => {
       expect(
-        useIslandStore.getState().isEvasionActive,
+        useIslandStore.getState()
+          .isEvasionActive,
       ).toBe(true);
 
       expect(
@@ -391,7 +416,8 @@ describe('Island Component', () => {
 
     await waitFor(() => {
       expect(
-        useIslandStore.getState().isEvasionActive,
+        useIslandStore.getState()
+          .isEvasionActive,
       ).toBe(false);
 
       expect(
@@ -405,7 +431,7 @@ describe('Island Component', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Visibility integration tests
+  // Visibility integration
   // ---------------------------------------------------------------------------
 
   it('respects application-level visibility independently of evasion', async () => {
