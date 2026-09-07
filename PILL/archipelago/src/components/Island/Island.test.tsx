@@ -471,4 +471,4 @@ describe('Island Component', () => {
       });
     });
   });
-});
+}); 
