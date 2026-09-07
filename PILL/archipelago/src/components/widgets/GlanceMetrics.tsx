@@ -1,3 +1,8 @@
+/**
+ * GlanceMetrics — Live system telemetry shown in CompactState.
+ * Receives CPU and RAM updates from the Rust telemetry monitor.
+ */
+
 import { useRef, useState } from 'react';
 
 import {
@@ -49,16 +54,26 @@ export function GlanceMetrics() {
       const previousWarningState =
         warningStateRef.current;
 
-      /**
-       * Emit only when telemetry crosses into
-       * the warning state.
-       */
       if (
         nextWarningState &&
         !previousWarningState
       ) {
         emitFeatureEvent(
           FEATURE_EVENTS.TELEMETRY_WARNING,
+          {
+            cpu_usage: payload.cpu_usage,
+            ram_percentage:
+              payload.ram_percentage,
+          },
+        );
+      }
+
+      if (
+        !nextWarningState &&
+        previousWarningState
+      ) {
+        emitFeatureEvent(
+          FEATURE_EVENTS.TELEMETRY_NORMAL,
           {
             cpu_usage: payload.cpu_usage,
             ram_percentage:

@@ -9,6 +9,7 @@ export const FEATURE_EVENTS = {
   FOCUS_TIMER_RESET: 'focusTimer.reset',
 
   TELEMETRY_WARNING: 'telemetry.warning',
+  TELEMETRY_NORMAL: 'telemetry.normal',
 } as const;
 
 export type FeatureEventName =
@@ -54,6 +55,11 @@ export interface TelemetryWarningPayload {
   ram_percentage: number;
 }
 
+export interface TelemetryNormalPayload {
+  cpu_usage: number;
+  ram_percentage: number;
+}
+
 export interface FeatureEventPayloads {
   [FEATURE_EVENTS.MEDIA_STARTED]: MediaStartedPayload;
   [FEATURE_EVENTS.MEDIA_PAUSED]: MediaPausedPayload;
@@ -70,19 +76,16 @@ export interface FeatureEventPayloads {
 
   [FEATURE_EVENTS.TELEMETRY_WARNING]:
     TelemetryWarningPayload;
+  [FEATURE_EVENTS.TELEMETRY_NORMAL]:
+    TelemetryNormalPayload;
 }
 
 export type FeatureEventHandler<
   K extends FeatureEventName,
-> = (payload: FeatureEventPayloads[K]) => void;
+> = (
+  payload: FeatureEventPayloads[K],
+) => void;
 
-/**
- * Internal listener storage.
- *
- * A Map is used instead of a mapped object because TypeScript
- * cannot safely assign a generic ListenerSet<K> into an indexed
- * mapped object in this situation.
- */
 type AnyFeatureEventHandler = (
   payload: unknown,
 ) => void;
@@ -92,14 +95,20 @@ const listeners = new Map<
   Set<AnyFeatureEventHandler>
 >();
 
-function getListeners<K extends FeatureEventName>(
-  eventName: K,
+function getListeners(
+  eventName: FeatureEventName,
 ): Set<AnyFeatureEventHandler> {
-  let eventListeners = listeners.get(eventName);
+  let eventListeners =
+    listeners.get(eventName);
 
   if (!eventListeners) {
-    eventListeners = new Set<AnyFeatureEventHandler>();
-    listeners.set(eventName, eventListeners);
+    eventListeners =
+      new Set<AnyFeatureEventHandler>();
+
+    listeners.set(
+      eventName,
+      eventListeners,
+    );
   }
 
   return eventListeners;
@@ -111,7 +120,8 @@ export function emitFeatureEvent<
   eventName: K,
   payload: FeatureEventPayloads[K],
 ): void {
-  const eventListeners = listeners.get(eventName);
+  const eventListeners =
+    listeners.get(eventName);
 
   if (!eventListeners) {
     return;
@@ -128,7 +138,8 @@ export function subscribeToFeatureEvent<
   eventName: K,
   handler: FeatureEventHandler<K>,
 ): () => void {
-  const eventListeners = getListeners(eventName);
+  const eventListeners =
+    getListeners(eventName);
 
   const typedHandler =
     handler as unknown as AnyFeatureEventHandler;
@@ -147,3 +158,26 @@ export function subscribeToFeatureEvent<
 export function clearFeatureEventListeners(): void {
   listeners.clear();
 }
+it('supports telemetry.normal events', () => {
+  const handler = vi.fn();
+
+  subscribeToFeatureEvent(
+    FEATURE_EVENTS.TELEMETRY_NORMAL,
+    handler,
+  );
+
+  emitFeatureEvent(
+    FEATURE_EVENTS.TELEMETRY_NORMAL,
+    {
+      cpu_usage: 62,
+      ram_percentage: 58,
+    },
+  );
+
+  expect(handler).toHaveBeenCalledTimes(1);
+
+  expect(handler).toHaveBeenCalledWith({
+    cpu_usage: 62,
+    ram_percentage: 58,
+  });
+});

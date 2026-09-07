@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 
 import {
   FEATURE_EVENTS,
+  type FeatureEventName,
 } from '../lib/featureEvents';
 
 import {
@@ -15,30 +16,23 @@ import {
 } from '../store/widgetStore';
 
 export function useFeatureCoordinator(): void {
-  const activateWidget = useWidgetStore(
-    (state) => state.activateWidget,
-  );
-
-  const deactivateWidget = useWidgetStore(
-    (state) => state.deactivateWidget,
+  const setWidgetActive = useWidgetStore(
+    (state) => state.setWidgetActive,
   );
 
   const applyEventActions = useCallback(
-    (eventName: Parameters<
-      typeof getFeatureEventActions
-    >[0]) => {
+    (eventName: FeatureEventName) => {
       const actions =
         getFeatureEventActions(eventName);
 
       for (const action of actions) {
-        if (action.type === 'activate') {
-          activateWidget(action.widgetId);
-        } else {
-          deactivateWidget(action.widgetId);
-        }
+        setWidgetActive(
+          action.widgetId,
+          action.active,
+        );
       }
     },
-    [activateWidget, deactivateWidget],
+    [setWidgetActive],
   );
 
   useFeatureEvent(
@@ -109,6 +103,15 @@ export function useFeatureCoordinator(): void {
     () => {
       applyEventActions(
         FEATURE_EVENTS.TELEMETRY_WARNING,
+      );
+    },
+  );
+
+  useFeatureEvent(
+    FEATURE_EVENTS.TELEMETRY_NORMAL,
+    () => {
+      applyEventActions(
+        FEATURE_EVENTS.TELEMETRY_NORMAL,
       );
     },
   );

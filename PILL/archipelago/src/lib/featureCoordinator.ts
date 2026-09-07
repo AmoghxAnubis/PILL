@@ -7,21 +7,11 @@ import type { WidgetId } from '../store/widgetStore';
 
 export type FeatureCoordinatorAction =
   | {
-      type: 'activate';
+      type: 'setActive';
       widgetId: WidgetId;
-    }
-  | {
-      type: 'deactivate';
-      widgetId: WidgetId;
+      active: boolean;
     };
 
-/**
- * Defines the application-level response to a feature event.
- *
- * This function contains policy only. It does not mutate Zustand
- * or interact with React. The hook layer is responsible for
- * executing the returned actions.
- */
 export function getFeatureEventActions(
   eventName: FeatureEventName,
 ): FeatureCoordinatorAction[] {
@@ -31,8 +21,9 @@ export function getFeatureEventActions(
     case FEATURE_EVENTS.MEDIA_CHANGED:
       return [
         {
-          type: 'activate',
+          type: 'setActive',
           widgetId: 'media',
+          active: true,
         },
       ];
 
@@ -41,24 +32,36 @@ export function getFeatureEventActions(
     case FEATURE_EVENTS.FOCUS_TIMER_COMPLETED:
       return [
         {
-          type: 'activate',
+          type: 'setActive',
           widgetId: 'focusTimer',
+          active: true,
         },
       ];
 
     case FEATURE_EVENTS.FOCUS_TIMER_RESET:
       return [
         {
-          type: 'deactivate',
+          type: 'setActive',
           widgetId: 'focusTimer',
+          active: false,
         },
       ];
 
     case FEATURE_EVENTS.TELEMETRY_WARNING:
       return [
         {
-          type: 'activate',
+          type: 'setActive',
           widgetId: 'telemetry',
+          active: true,
+        },
+      ];
+
+    case FEATURE_EVENTS.TELEMETRY_NORMAL:
+      return [
+        {
+          type: 'setActive',
+          widgetId: 'telemetry',
+          active: false,
         },
       ];
 
