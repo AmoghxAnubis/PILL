@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEvasion } from '../../hooks/useEvasion';
 import { useIslandState } from '../../hooks/useIslandState';
 import { useWidgetActivity } from '../../hooks/useWidgetActivity';
+import { useWidgetLayoutSync } from '../../hooks/useWidgetLayoutSync';
 import { useWidgetOrchestrator } from '../../hooks/useWidgetOrchestrator';
 
 import {
@@ -22,9 +23,13 @@ import './Island.css';
 export function Island() {
   useEvasion();
   useWidgetActivity();
+  useWidgetLayoutSync();
 
-  const { state, visible, isEvasionActive } = useIslandStore();
-  const widgetOrchestration = useWidgetOrchestrator();
+  const { state, visible, isEvasionActive } =
+    useIslandStore();
+
+  const widgetOrchestration =
+    useWidgetOrchestrator();
 
   const {
     handleMouseEnter,
@@ -45,12 +50,15 @@ export function Island() {
       <motion.div
         className={`island island--${state}`}
         layout
-        data-widget-layout={widgetOrchestration.layout}
+        data-widget-layout={
+          widgetOrchestration.layout
+        }
         data-widget-primary={
           widgetOrchestration.primary ?? undefined
         }
         data-widget-secondary={
-          widgetOrchestration.secondary ?? undefined
+          widgetOrchestration.secondary ??
+          undefined
         }
         animate={{
           width: dims.width,
@@ -59,7 +67,9 @@ export function Island() {
         }}
         transition={SPRING_CONFIG}
         style={{
-          pointerEvents: shouldShowIsland ? 'auto' : 'none',
+          pointerEvents: shouldShowIsland
+            ? 'auto'
+            : 'none',
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
