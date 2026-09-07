@@ -1,10 +1,14 @@
 import type { MouseEvent } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+
+import type { WidgetOrchestration } from '../../lib/widgetOrchestrator';
+
 import { useMedia } from '../../hooks/useMedia';
 import { useFocusTimer } from '../../hooks/useFocusTimer';
 
 interface ExpandedStateProps {
   onCollapse: () => void;
+  widgetOrchestration?: WidgetOrchestration;
 }
 
 function formatMediaTime(seconds: number): string {
@@ -16,7 +20,9 @@ function formatMediaTime(seconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const remainingSeconds = totalSeconds % 60;
 
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  return `${minutes}:${remainingSeconds
+    .toString()
+    .padStart(2, '0')}`;
 }
 
 function formatFocusTime(seconds: number): string {
@@ -37,7 +43,10 @@ function getProgressPercentage(
   position: number,
   duration: number,
 ): number {
-  if (!Number.isFinite(position) || !Number.isFinite(duration)) {
+  if (
+    !Number.isFinite(position) ||
+    !Number.isFinite(duration)
+  ) {
     return 0;
   }
 
@@ -54,13 +63,16 @@ function getProgressPercentage(
 /**
  * ExpandedState — The full dashboard view of the island.
  *
- * Focus timer becomes the primary expanded view whenever it
- * is active. Otherwise the existing media dashboard is shown.
+ * The widget orchestrator determines which widget has priority.
+ * Focus remains the primary expanded view when selected by the
+ * orchestrator; media remains the fallback expanded dashboard.
  */
 export function ExpandedState({
   onCollapse,
+  widgetOrchestration,
 }: ExpandedStateProps) {
   const { media, hasMedia } = useMedia();
+
   const {
     secondsRemaining,
     isRunning,
@@ -70,12 +82,40 @@ export function ExpandedState({
     reset,
   } = useFocusTimer();
 
+  const orchestration =
+    widgetOrchestration ?? {
+      layout: 'none' as const,
+      primary: null,
+      secondary: null,
+    };
+
+  const hasOrchestratedWidgets =
+    orchestration.layout !== 'none';
+
+
+  const focusTimerSelected =
+    hasOrchestratedWidgets
+      ? orchestration.primary === 'focusTimer'
+      : focusTimerStatus !== 'idle';
+
+  const mediaSelected =
+    hasOrchestratedWidgets
+      ? orchestration.primary === 'media'
+      : hasMedia;
+
+  const showFocusTimer =
+    focusTimerSelected &&
+    focusTimerStatus !== 'idle';
+
+  const showMedia =
+    mediaSelected &&
+    hasMedia;
+
   const progress = getProgressPercentage(
     media.position,
     media.duration,
   );
 
-  const showFocusTimer = focusTimerStatus !== 'idle';
   const focusTimerCompleted =
     focusTimerStatus === 'completed';
 
@@ -149,14 +189,16 @@ export function ExpandedState({
         <span className="state-expanded__title">
           {showFocusTimer
             ? 'Focus'
-            : hasMedia
+            : showMedia
               ? 'Now Playing'
               : 'Archipelago'}
         </span>
 
         <button
           className="state-expanded__close"
-          onClick={(event: MouseEvent<HTMLButtonElement>) => {
+          onClick={(
+            event: MouseEvent<HTMLButtonElement>,
+          ) => {
             event.stopPropagation();
             onCollapse();
           }}
@@ -201,7 +243,8 @@ export function ExpandedState({
                     100,
                     Math.max(
                       0,
-                      ((25 * 60 - secondsRemaining) /
+                      ((25 * 60 -
+                        secondsRemaining) /
                         (25 * 60)) *
                         100,
                     ),
@@ -237,7 +280,7 @@ export function ExpandedState({
             </button>
           </div>
         </div>
-      ) : hasMedia ? (
+      ) : showMedia ? (
         <div className="state-expanded__media">
           <div className="state-expanded__media-info">
             {media.artwork ? (
@@ -258,7 +301,9 @@ export function ExpandedState({
             <span
               className="state-expanded__media-status"
               aria-label={
-                media.is_playing ? 'Playing' : 'Paused'
+                media.is_playing
+                  ? 'Playing'
+                  : 'Paused'
               }
             >
               {media.is_playing ? '▶' : '⏸'}
@@ -286,7 +331,9 @@ export function ExpandedState({
             >
               <div
                 className="state-expanded__progress-fill"
-                style={{ width: `${progress}%` }}
+                style={{
+                  width: `${progress}%`,
+                }}
               />
             </div>
 
@@ -315,7 +362,9 @@ export function ExpandedState({
               className="state-expanded__control state-expanded__control--primary"
               onClick={handlePlayPause}
               aria-label={
-                media.is_playing ? 'Pause' : 'Play'
+                media.is_playing
+                  ? 'Pause'
+                  : 'Play'
               }
               type="button"
             >

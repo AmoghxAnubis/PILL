@@ -21,6 +21,7 @@ import {
   useTauriTypedEvent,
   type FullscreenStateChanged,
 } from '../../lib/tauriEvents';
+import { useWidgetOrchestrator } from '../../hooks/useWidgetOrchestrator';
 
 // -----------------------------------------------------------------------------
 // Test cleanup
@@ -31,11 +32,17 @@ afterEach(() => {
 });
 
 // -----------------------------------------------------------------------------
-// Tauri mocks
+// Tauri / hook mocks
 // -----------------------------------------------------------------------------
+
 vi.mock('../../hooks/useWidgetActivity', () => ({
   useWidgetActivity: vi.fn(),
 }));
+
+vi.mock('../../hooks/useWidgetOrchestrator', () => ({
+  useWidgetOrchestrator: vi.fn(),
+}));
+
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn().mockResolvedValue(undefined),
 }));
@@ -85,6 +92,25 @@ vi.mock('../states/ExpandedState', () => ({
   ),
 }));
 
+vi.mock('../states/SplitState', () => ({
+  SplitState: () => (
+    <div data-testid="split-state">
+      <span>Primary</span>
+      <span>Secondary</span>
+    </div>
+  ),
+}));
+
+// -----------------------------------------------------------------------------
+// Test helpers
+// -----------------------------------------------------------------------------
+
+const defaultWidgetOrchestration = {
+  layout: 'none' as const,
+  primary: null,
+  secondary: null,
+};
+
 describe('Island Component', () => {
   let fullscreenHandler:
     | ((payload: FullscreenStateChanged) => void)
@@ -101,6 +127,10 @@ describe('Island Component', () => {
     fullscreenHandler = undefined;
 
     vi.clearAllMocks();
+
+    vi.mocked(useWidgetOrchestrator).mockReturnValue(
+      defaultWidgetOrchestration,
+    );
 
     vi.mocked(useTauriTypedEvent).mockImplementation(
       ((
@@ -195,6 +225,32 @@ describe('Island Component', () => {
     expect(
       screen.getByText('Primary'),
     ).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Widget orchestrator integration
+  // ---------------------------------------------------------------------------
+
+  it('consumes the widget orchestrator', () => {
+    render(<Island />);
+
+    expect(
+      useWidgetOrchestrator,
+    ).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads the current widget orchestration from the hook', () => {
+    vi.mocked(useWidgetOrchestrator).mockReturnValue({
+      layout: 'split',
+      primary: 'focusTimer',
+      secondary: 'media',
+    });
+
+    render(<Island />);
+
+    expect(
+      useWidgetOrchestrator,
+    ).toHaveBeenCalledTimes(1);
   });
 
   // ---------------------------------------------------------------------------
@@ -329,41 +385,46 @@ describe('Island Component', () => {
       screen.getByTestId('expanded-state'),
     ).toBeInTheDocument();
   });
-});
-it('respects application-level visibility independently of evasion', async () => {
-  useIslandStore.setState({
-    visible: false,
-    isEvasionActive: false,
-  });
 
-  render(<Island />);
+  // ---------------------------------------------------------------------------
+  // Visibility integration
+  // ---------------------------------------------------------------------------
 
-  const island = document.querySelector(
-    '.island-wrapper > div',
-  ) as HTMLElement;
+  it('respects application-level visibility independently of evasion', async () => {
+    useIslandStore.setState({
+      visible: false,
+      isEvasionActive: false,
+    });
 
-  await waitFor(() => {
-    expect(island).toHaveStyle({
-      pointerEvents: 'none',
+    render(<Island />);
+
+    const island = document.querySelector(
+      '.island-wrapper > div',
+    ) as HTMLElement;
+
+    await waitFor(() => {
+      expect(island).toHaveStyle({
+        pointerEvents: 'none',
+      });
     });
   });
-});
 
-it('keeps the Island hidden when either visibility mechanism disables it', async () => {
-  useIslandStore.setState({
-    visible: false,
-    isEvasionActive: true,
-  });
+  it('keeps the Island hidden when either visibility mechanism disables it', async () => {
+    useIslandStore.setState({
+      visible: false,
+      isEvasionActive: true,
+    });
 
-  render(<Island />);
+    render(<Island />);
 
-  const island = document.querySelector(
-    '.island-wrapper > div',
-  ) as HTMLElement;
+    const island = document.querySelector(
+      '.island-wrapper > div',
+    ) as HTMLElement;
 
-  await waitFor(() => {
-    expect(island).toHaveStyle({
-      pointerEvents: 'none',
+    await waitFor(() => {
+      expect(island).toHaveStyle({
+        pointerEvents: 'none',
+      });
     });
   });
 });

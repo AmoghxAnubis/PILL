@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEvasion } from '../../hooks/useEvasion';
 import { useIslandState } from '../../hooks/useIslandState';
 import { useWidgetActivity } from '../../hooks/useWidgetActivity';
+import { useWidgetOrchestrator } from '../../hooks/useWidgetOrchestrator';
 
 import {
   ISLAND_DIMENSIONS,
@@ -18,29 +19,12 @@ import { SplitState } from '../states/SplitState';
 
 import './Island.css';
 
-/**
- * Main Island container component.
- *
- * Manages:
- * - Island state transitions
- * - Spring-based size animations
- * - Unified visibility state
- * - Fullscreen/evasion behavior
- * - Widget activity synchronization
- * - Rendering of the appropriate state content
- */
 export function Island() {
-  // Subscribe to fullscreen/evasion events.
   useEvasion();
-
-  // Synchronize feature activity with widgetStore.
   useWidgetActivity();
 
-  const {
-    state,
-    visible,
-    isEvasionActive,
-  } = useIslandStore();
+  const { state, visible, isEvasionActive } = useIslandStore();
+  const widgetOrchestration = useWidgetOrchestrator();
 
   const {
     handleMouseEnter,
@@ -61,6 +45,13 @@ export function Island() {
       <motion.div
         className={`island island--${state}`}
         layout
+        data-widget-layout={widgetOrchestration.layout}
+        data-widget-primary={
+          widgetOrchestration.primary ?? undefined
+        }
+        data-widget-secondary={
+          widgetOrchestration.secondary ?? undefined
+        }
         animate={{
           width: dims.width,
           height: dims.height,
@@ -68,9 +59,7 @@ export function Island() {
         }}
         transition={SPRING_CONFIG}
         style={{
-          pointerEvents: shouldShowIsland
-            ? 'auto'
-            : 'none',
+          pointerEvents: shouldShowIsland ? 'auto' : 'none',
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -80,19 +69,25 @@ export function Island() {
             : undefined
         }
       >
-        {/* Glassmorphism background layer */}
         <div className="island__glass" />
 
-        {/* Content layer */}
         <div className="island__content">
           <AnimatePresence mode="wait">
             {state === 'idle' && (
               <motion.div
                 key="idle"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
+                initial={{
+                  opacity: 0,
+                }}
+                animate={{
+                  opacity: 1,
+                }}
+                exit={{
+                  opacity: 0,
+                }}
+                transition={{
+                  duration: 0.15,
+                }}
               >
                 <IdleState />
               </motion.div>
@@ -101,12 +96,24 @@ export function Island() {
             {state === 'compact' && (
               <motion.div
                 key="compact"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
+                initial={{
+                  opacity: 0,
+                }}
+                animate={{
+                  opacity: 1,
+                }}
+                exit={{
+                  opacity: 0,
+                }}
+                transition={{
+                  duration: 0.15,
+                }}
               >
-                <CompactState />
+                <CompactState
+                  widgetOrchestration={
+                    widgetOrchestration
+                  }
+                />
               </motion.div>
             )}
 
@@ -125,10 +132,15 @@ export function Island() {
                   opacity: 0,
                   scale: 0.95,
                 }}
-                transition={{ duration: 0.2 }}
+                transition={{
+                  duration: 0.2,
+                }}
               >
                 <ExpandedState
                   onCollapse={handleCollapse}
+                  widgetOrchestration={
+                    widgetOrchestration
+                  }
                 />
               </motion.div>
             )}
@@ -136,12 +148,24 @@ export function Island() {
             {state === 'split' && (
               <motion.div
                 key="split"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
+                initial={{
+                  opacity: 0,
+                }}
+                animate={{
+                  opacity: 1,
+                }}
+                exit={{
+                  opacity: 0,
+                }}
+                transition={{
+                  duration: 0.15,
+                }}
               >
-                <SplitState />
+                <SplitState
+                  widgetOrchestration={
+                    widgetOrchestration
+                  }
+                />
               </motion.div>
             )}
           </AnimatePresence>
