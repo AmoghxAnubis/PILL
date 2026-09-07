@@ -33,7 +33,9 @@ afterEach(() => {
 // -----------------------------------------------------------------------------
 // Tauri mocks
 // -----------------------------------------------------------------------------
-
+vi.mock('../../hooks/useWidgetActivity', () => ({
+  useWidgetActivity: vi.fn(),
+}));
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn().mockResolvedValue(undefined),
 }));
