@@ -457,3 +457,81 @@ body,
 .focus-timer[data-status='completed'] .focus-timer__display {
   opacity: 0.6;
 }
+.state-expanded__focus-timer {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 4px 10px;
+}
+
+.state-expanded__focus-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 19px;
+}
+
+.state-expanded__focus-content {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.state-expanded__focus-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.state-expanded__focus-time {
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.state-expanded__focus-progress {
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.state-expanded__focus-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.8);
+  transition: width 0.35s linear;
+}
+
+.state-expanded__focus-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.state-expanded__focus-timer--completed
+  .state-expanded__focus-icon {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.state-expanded__focus-timer--completed
+  .state-expanded__focus-time {
+  opacity: 0.65;
+}

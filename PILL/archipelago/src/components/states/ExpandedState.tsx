@@ -1,6 +1,7 @@
 import type { MouseEvent } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useMedia } from '../../hooks/useMedia';
+import { useFocusTimer } from '../../hooks/useFocusTimer';
 
 interface ExpandedStateProps {
   onCollapse: () => void;
@@ -18,6 +19,20 @@ function formatMediaTime(seconds: number): string {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
 
+function formatFocusTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    return '00:00';
+  }
+
+  const totalSeconds = Math.floor(seconds);
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = totalSeconds % 60;
+
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds
+    .toString()
+    .padStart(2, '0')}`;
+}
+
 function getProgressPercentage(
   position: number,
   duration: number,
@@ -30,21 +45,58 @@ function getProgressPercentage(
     return 0;
   }
 
-  return Math.min(100, Math.max(0, (position / duration) * 100));
+  return Math.min(
+    100,
+    Math.max(0, (position / duration) * 100),
+  );
 }
 
 /**
  * ExpandedState — The full dashboard view of the island.
- * Shows active media information, artwork, progress,
- * and playback controls.
+ *
+ * Focus timer becomes the primary expanded view whenever it
+ * is active. Otherwise the existing media dashboard is shown.
  */
-export function ExpandedState({ onCollapse }: ExpandedStateProps) {
+export function ExpandedState({
+  onCollapse,
+}: ExpandedStateProps) {
   const { media, hasMedia } = useMedia();
+  const {
+    secondsRemaining,
+    isRunning,
+    status: focusTimerStatus,
+    start,
+    pause,
+    reset,
+  } = useFocusTimer();
 
   const progress = getProgressPercentage(
     media.position,
     media.duration,
   );
+
+  const showFocusTimer = focusTimerStatus !== 'idle';
+  const focusTimerCompleted =
+    focusTimerStatus === 'completed';
+
+  const handleFocusToggle = (
+    event: MouseEvent<HTMLButtonElement>,
+  ) => {
+    event.stopPropagation();
+
+    if (isRunning) {
+      void pause();
+    } else {
+      void start();
+    }
+  };
+
+  const handleFocusReset = (
+    event: MouseEvent<HTMLButtonElement>,
+  ) => {
+    event.stopPropagation();
+    void reset();
+  };
 
   const handlePrevious = async (
     event: MouseEvent<HTMLButtonElement>,
@@ -95,7 +147,11 @@ export function ExpandedState({ onCollapse }: ExpandedStateProps) {
     <div className="state-expanded">
       <div className="state-expanded__header">
         <span className="state-expanded__title">
-          {hasMedia ? 'Now Playing' : 'Archipelago'}
+          {showFocusTimer
+            ? 'Focus'
+            : hasMedia
+              ? 'Now Playing'
+              : 'Archipelago'}
         </span>
 
         <button
@@ -111,7 +167,77 @@ export function ExpandedState({ onCollapse }: ExpandedStateProps) {
         </button>
       </div>
 
-      {hasMedia ? (
+      {showFocusTimer ? (
+        <div
+          className={`state-expanded__focus-timer${
+            focusTimerCompleted
+              ? ' state-expanded__focus-timer--completed'
+              : ''
+          }`}
+          data-status={focusTimerStatus}
+        >
+          <div className="state-expanded__focus-icon">
+            {focusTimerCompleted ? '✓' : '◷'}
+          </div>
+
+          <div className="state-expanded__focus-content">
+            <span className="state-expanded__focus-label">
+              {focusTimerCompleted
+                ? 'Focus session complete'
+                : focusTimerStatus === 'paused'
+                  ? 'Focus paused'
+                  : 'Focus session'}
+            </span>
+
+            <span className="state-expanded__focus-time">
+              {formatFocusTime(secondsRemaining)}
+            </span>
+
+            <div className="state-expanded__focus-progress">
+              <div
+                className="state-expanded__focus-progress-fill"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.max(
+                      0,
+                      ((25 * 60 - secondsRemaining) /
+                        (25 * 60)) *
+                        100,
+                    ),
+                  )}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="state-expanded__focus-controls">
+            {!focusTimerCompleted && (
+              <button
+                className="state-expanded__control state-expanded__control--primary"
+                onClick={handleFocusToggle}
+                aria-label={
+                  isRunning
+                    ? 'Pause focus timer'
+                    : 'Resume focus timer'
+                }
+                type="button"
+              >
+                {isRunning ? 'Ⅱ' : '▶'}
+              </button>
+            )}
+
+            <button
+              className="state-expanded__control"
+              onClick={handleFocusReset}
+              aria-label="Reset focus timer"
+              type="button"
+            >
+              ↻
+            </button>
+          </div>
+        </div>
+      ) : hasMedia ? (
         <div className="state-expanded__media">
           <div className="state-expanded__media-info">
             {media.artwork ? (
@@ -165,8 +291,13 @@ export function ExpandedState({ onCollapse }: ExpandedStateProps) {
             </div>
 
             <div className="state-expanded__progress-times">
-              <span>{formatMediaTime(media.position)}</span>
-              <span>{formatMediaTime(media.duration)}</span>
+              <span>
+                {formatMediaTime(media.position)}
+              </span>
+
+              <span>
+                {formatMediaTime(media.duration)}
+              </span>
             </div>
           </div>
 
@@ -183,7 +314,9 @@ export function ExpandedState({ onCollapse }: ExpandedStateProps) {
             <button
               className="state-expanded__control state-expanded__control--primary"
               onClick={handlePlayPause}
-              aria-label={media.is_playing ? 'Pause' : 'Play'}
+              aria-label={
+                media.is_playing ? 'Pause' : 'Play'
+              }
               type="button"
             >
               {media.is_playing ? '⏸' : '▶'}
