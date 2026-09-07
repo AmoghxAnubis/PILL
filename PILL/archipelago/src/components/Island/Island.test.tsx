@@ -27,28 +27,24 @@ import {
 
 import { useWidgetOrchestrator } from '../../hooks/useWidgetOrchestrator';
 
-// -----------------------------------------------------------------------------
-// Test cleanup
-// -----------------------------------------------------------------------------
+import { useFeatureCoordinator } from '../../hooks/useFeatureCoordinator';
+
+import { useFeatureSources } from '../../hooks/useFeatureSources';
 
 afterEach(() => {
   cleanup();
 });
 
-// -----------------------------------------------------------------------------
-// Tauri / application hook mocks
-// -----------------------------------------------------------------------------
-
-vi.mock('../../hooks/useWidgetActivity', () => ({
-  useWidgetActivity: vi.fn(),
-}));
-
-vi.mock('../../hooks/useWidgetLayoutSync', () => ({
-  useWidgetLayoutSync: vi.fn(),
+vi.mock('../../hooks/useFeatureSources', () => ({
+  useFeatureSources: vi.fn(),
 }));
 
 vi.mock('../../hooks/useFeatureCoordinator', () => ({
   useFeatureCoordinator: vi.fn(),
+}));
+
+vi.mock('../../hooks/useWidgetLayoutSync', () => ({
+  useWidgetLayoutSync: vi.fn(),
 }));
 
 vi.mock('../../hooks/useWidgetOrchestrator', () => ({
@@ -69,10 +65,6 @@ vi.mock('../../lib/tauriEvents', async () => {
     useTauriTypedEvent: vi.fn(),
   };
 });
-
-// -----------------------------------------------------------------------------
-// State mocks
-// -----------------------------------------------------------------------------
 
 vi.mock('../states/IdleState', () => ({
   IdleState: () => (
@@ -112,10 +104,6 @@ vi.mock('../states/SplitState', () => ({
   ),
 }));
 
-// -----------------------------------------------------------------------------
-// Test helpers
-// -----------------------------------------------------------------------------
-
 const defaultWidgetOrchestration = {
   layout: 'none' as const,
   primary: null,
@@ -139,11 +127,15 @@ describe('Island Component', () => {
 
     vi.clearAllMocks();
 
-    vi.mocked(useWidgetOrchestrator).mockReturnValue(
+    vi.mocked(
+      useWidgetOrchestrator,
+    ).mockReturnValue(
       defaultWidgetOrchestration,
     );
 
-    vi.mocked(useTauriTypedEvent).mockImplementation(
+    vi.mocked(
+      useTauriTypedEvent,
+    ).mockImplementation(
       ((
         _eventName: string,
         handler: (
@@ -155,9 +147,21 @@ describe('Island Component', () => {
     );
   });
 
-  // ---------------------------------------------------------------------------
-  // Existing Island state tests
-  // ---------------------------------------------------------------------------
+  it('mounts the feature sources', () => {
+    render(<Island />);
+
+    expect(
+      useFeatureSources,
+    ).toHaveBeenCalled();
+  });
+
+  it('mounts the feature coordinator', () => {
+    render(<Island />);
+
+    expect(
+      useFeatureCoordinator,
+    ).toHaveBeenCalled();
+  });
 
   it('renders idle state initially', () => {
     render(<Island />);
@@ -236,24 +240,6 @@ describe('Island Component', () => {
     ).toBeInTheDocument();
   });
 
-  // ---------------------------------------------------------------------------
-  // Application hook integration
-  // ---------------------------------------------------------------------------
-
-  it('mounts the feature coordinator', async () => {
-    const {
-      useFeatureCoordinator,
-    } = await import(
-      '../../hooks/useFeatureCoordinator'
-    );
-
-    render(<Island />);
-
-    expect(
-      useFeatureCoordinator,
-    ).toHaveBeenCalled();
-  });
-
   it('consumes the widget orchestrator', () => {
     render(<Island />);
 
@@ -293,10 +279,6 @@ describe('Island Component', () => {
     );
   });
 
-  // ---------------------------------------------------------------------------
-  // Evasion integration tests
-  // ---------------------------------------------------------------------------
-
   it('registers a fullscreen state listener', () => {
     render(<Island />);
 
@@ -311,13 +293,17 @@ describe('Island Component', () => {
       expect.any(Function),
     );
 
-    expect(fullscreenHandler).toBeDefined();
+    expect(
+      fullscreenHandler,
+    ).toBeDefined();
   });
 
   it('hides the Island when fullscreen evasion becomes active', async () => {
     render(<Island />);
 
-    expect(fullscreenHandler).toBeDefined();
+    expect(
+      fullscreenHandler,
+    ).toBeDefined();
 
     act(() => {
       fullscreenHandler?.({
@@ -344,7 +330,9 @@ describe('Island Component', () => {
   it('shows the Island again when fullscreen evasion ends', async () => {
     render(<Island />);
 
-    expect(fullscreenHandler).toBeDefined();
+    expect(
+      fullscreenHandler,
+    ).toBeDefined();
 
     act(() => {
       fullscreenHandler?.({
@@ -385,7 +373,9 @@ describe('Island Component', () => {
       screen.getByTestId('expanded-state'),
     ).toBeInTheDocument();
 
-    expect(fullscreenHandler).toBeDefined();
+    expect(
+      fullscreenHandler,
+    ).toBeDefined();
 
     act(() => {
       fullscreenHandler?.({
@@ -430,10 +420,6 @@ describe('Island Component', () => {
     ).toBeInTheDocument();
   });
 
-  // ---------------------------------------------------------------------------
-  // Visibility integration
-  // ---------------------------------------------------------------------------
-
   it('respects application-level visibility independently of evasion', async () => {
     useIslandStore.setState({
       visible: false,
@@ -471,4 +457,4 @@ describe('Island Component', () => {
       });
     });
   });
-}); 
+});

@@ -2,8 +2,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import { useEvasion } from '../../hooks/useEvasion';
 import { useFeatureCoordinator } from '../../hooks/useFeatureCoordinator';
+import { useFeatureSources } from '../../hooks/useFeatureSources';
 import { useIslandState } from '../../hooks/useIslandState';
-import { useWidgetActivity } from '../../hooks/useWidgetActivity';
 import { useWidgetLayoutSync } from '../../hooks/useWidgetLayoutSync';
 import { useWidgetOrchestrator } from '../../hooks/useWidgetOrchestrator';
 
@@ -23,9 +23,9 @@ import './Island.css';
 
 export function Island() {
   useEvasion();
-  useWidgetActivity();
-  useWidgetLayoutSync();
+  useFeatureSources();
   useFeatureCoordinator();
+  useWidgetLayoutSync();
 
   const {
     state,
