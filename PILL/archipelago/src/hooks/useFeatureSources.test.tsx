@@ -13,21 +13,21 @@ import {
 
 import { useFeatureSources } from './useFeatureSources';
 import { useMediaSource } from './useMediaSource';
-import { useFocusTimer } from './useFocusTimer';
+import { useFocusTimerSource } from './useFocusTimerSource';
 
 vi.mock('./useMediaSource', () => ({
   useMediaSource: vi.fn(),
 }));
 
-vi.mock('./useFocusTimer', () => ({
-  useFocusTimer: vi.fn(),
+vi.mock('./useFocusTimerSource', () => ({
+  useFocusTimerSource: vi.fn(),
 }));
 
 const mockedUseMediaSource =
   vi.mocked(useMediaSource);
 
-const mockedUseFocusTimer =
-  vi.mocked(useFocusTimer);
+const mockedUseFocusTimerSource =
+  vi.mocked(useFocusTimerSource);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -50,7 +50,7 @@ describe('useFeatureSources', () => {
     renderHook(() => useFeatureSources());
 
     expect(
-      mockedUseFocusTimer,
+      mockedUseFocusTimerSource,
     ).toHaveBeenCalledTimes(1);
   });
 
@@ -62,7 +62,7 @@ describe('useFeatureSources', () => {
     ).toHaveBeenCalledTimes(1);
 
     expect(
-      mockedUseFocusTimer,
+      mockedUseFocusTimerSource,
     ).toHaveBeenCalledTimes(1);
   });
 });
