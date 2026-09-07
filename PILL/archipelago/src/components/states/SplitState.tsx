@@ -1,31 +1,78 @@
-/**
- * SplitState — Used when multiple concurrent widgets are active.
- *
- * The orchestrator supplies the primary and secondary widget IDs.
- * The actual widget presentation will be expanded in the next
- * orchestration step.
- */
-
 import type { WidgetOrchestration } from '../../lib/widgetOrchestrator';
+
+import { useMedia } from '../../hooks/useMedia';
+
+import { GlanceMetrics } from '../widgets/GlanceMetrics';
+import { FocusTimer } from '../widgets/FocusTimer';
 
 interface SplitStateProps {
   widgetOrchestration?: WidgetOrchestration;
 }
 
-const WIDGET_LABELS: Record<string, string> = {
-  media: 'Media',
-  focusTimer: 'Focus',
-  telemetry: 'Telemetry',
-};
+function MediaWidget() {
+  const { media, hasMedia } = useMedia();
 
-function getWidgetLabel(
-  widgetId: string | null,
-): string {
-  if (!widgetId) {
-    return 'None';
+  if (!hasMedia) {
+    return (
+      <div
+        className="state-split__widget state-split__widget--media"
+        aria-label="Media unavailable"
+      >
+        <span className="state-split__widget-icon">
+          ♪
+        </span>
+        <span className="state-split__widget-label">
+          Media
+        </span>
+      </div>
+    );
   }
 
-  return WIDGET_LABELS[widgetId] ?? widgetId;
+  return (
+    <div
+      className="state-split__widget state-split__widget--media"
+      title={`${media.title} — ${media.artist}`}
+    >
+      <span
+        className="state-split__widget-icon"
+        aria-label={
+          media.is_playing
+            ? 'Playing'
+            : 'Paused'
+        }
+      >
+        {media.is_playing ? '▶' : '⏸'}
+      </span>
+
+      <span className="state-split__widget-label">
+        {media.title}
+      </span>
+    </div>
+  );
+}
+
+function WidgetContent({
+  widgetId,
+}: {
+  widgetId: string | null;
+}) {
+  switch (widgetId) {
+    case 'focusTimer':
+      return <FocusTimer />;
+
+    case 'media':
+      return <MediaWidget />;
+
+    case 'telemetry':
+      return <GlanceMetrics />;
+
+    default:
+      return (
+        <span className="state-split__widget-label">
+          {widgetId ?? 'None'}
+        </span>
+      );
+  }
 }
 
 export function SplitState({
@@ -42,32 +89,28 @@ export function SplitState({
     <div
       className="state-split"
       data-layout={orchestration.layout}
+      data-primary={orchestration.primary ?? 'none'}
+      data-secondary={
+        orchestration.secondary ?? 'none'
+      }
     >
       <div className="state-split__primary">
-        <span>
-          {getWidgetLabel(
-            orchestration.primary,
-          )}
-        </span>
+        <WidgetContent
+          widgetId={orchestration.primary}
+        />
       </div>
 
       <div
         className="state-split__badge"
         aria-label={
           orchestration.secondary
-            ? `Secondary widget: ${getWidgetLabel(
-                orchestration.secondary,
-              )}`
+            ? `Secondary widget`
             : 'No secondary widget'
         }
       >
-        <span>
-          {orchestration.secondary
-            ? getWidgetLabel(
-                orchestration.secondary,
-              )
-            : '•'}
-        </span>
+        <WidgetContent
+          widgetId={orchestration.secondary}
+        />
       </div>
     </div>
   );
