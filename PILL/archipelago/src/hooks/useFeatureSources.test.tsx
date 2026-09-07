@@ -1,7 +1,10 @@
-import { renderHook } from '@testing-library/react';
-
+import {
+  cleanup,
+  renderHook,
+} from '@testing-library/react';
 import {
   afterEach,
+  beforeEach,
   describe,
   expect,
   it,
@@ -9,48 +12,57 @@ import {
 } from 'vitest';
 
 import { useFeatureSources } from './useFeatureSources';
+import { useMediaSource } from './useMediaSource';
+import { useFocusTimer } from './useFocusTimer';
 
-vi.mock('./useMedia', () => ({
-  useMedia: vi.fn(),
+vi.mock('./useMediaSource', () => ({
+  useMediaSource: vi.fn(),
 }));
 
 vi.mock('./useFocusTimer', () => ({
   useFocusTimer: vi.fn(),
 }));
 
-import { useMedia } from './useMedia';
-import { useFocusTimer } from './useFocusTimer';
+const mockedUseMediaSource =
+  vi.mocked(useMediaSource);
+
+const mockedUseFocusTimer =
+  vi.mocked(useFocusTimer);
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+afterEach(() => {
+  cleanup();
+});
 
 describe('useFeatureSources', () => {
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('mounts the media feature source', () => {
     renderHook(() => useFeatureSources());
 
     expect(
-      useMedia,
-    ).toHaveBeenCalled();
+      mockedUseMediaSource,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('mounts the focus timer feature source', () => {
     renderHook(() => useFeatureSources());
 
     expect(
-      useFocusTimer,
-    ).toHaveBeenCalled();
+      mockedUseFocusTimer,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('mounts all feature sources together', () => {
     renderHook(() => useFeatureSources());
 
     expect(
-      useMedia,
+      mockedUseMediaSource,
     ).toHaveBeenCalledTimes(1);
 
     expect(
-      useFocusTimer,
+      mockedUseFocusTimer,
     ).toHaveBeenCalledTimes(1);
   });
 });
