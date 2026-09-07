@@ -1,4 +1,6 @@
 export const FEATURE_EVENTS = {
+  MEDIA_AVAILABLE: 'media.available',
+  MEDIA_UNAVAILABLE: 'media.unavailable',
   MEDIA_STARTED: 'media.started',
   MEDIA_PAUSED: 'media.paused',
   MEDIA_CHANGED: 'media.changed',
@@ -14,6 +16,19 @@ export const FEATURE_EVENTS = {
 
 export type FeatureEventName =
   (typeof FEATURE_EVENTS)[keyof typeof FEATURE_EVENTS];
+
+export interface MediaAvailablePayload {
+  app_id: string;
+  title: string;
+  artist: string;
+  is_playing: boolean;
+}
+
+export interface MediaUnavailablePayload {
+  app_id: string;
+  title: string;
+  artist: string;
+}
 
 export interface MediaStartedPayload {
   app_id: string;
@@ -61,9 +76,20 @@ export interface TelemetryNormalPayload {
 }
 
 export interface FeatureEventPayloads {
-  [FEATURE_EVENTS.MEDIA_STARTED]: MediaStartedPayload;
-  [FEATURE_EVENTS.MEDIA_PAUSED]: MediaPausedPayload;
-  [FEATURE_EVENTS.MEDIA_CHANGED]: MediaChangedPayload;
+  [FEATURE_EVENTS.MEDIA_AVAILABLE]:
+    MediaAvailablePayload;
+
+  [FEATURE_EVENTS.MEDIA_UNAVAILABLE]:
+    MediaUnavailablePayload;
+
+  [FEATURE_EVENTS.MEDIA_STARTED]:
+    MediaStartedPayload;
+
+  [FEATURE_EVENTS.MEDIA_PAUSED]:
+    MediaPausedPayload;
+
+  [FEATURE_EVENTS.MEDIA_CHANGED]:
+    MediaChangedPayload;
 
   [FEATURE_EVENTS.FOCUS_TIMER_STARTED]:
     FocusTimerStartedPayload;

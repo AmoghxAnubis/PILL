@@ -28,6 +28,15 @@ interface MeaningfulMediaState {
   is_playing: boolean;
 }
 
+function hasMediaPayload(
+  payload: MediaUpdate,
+): boolean {
+  return (
+    payload.title.length > 0 ||
+    payload.artist.length > 0
+  );
+}
+
 export function useMedia() {
   const [media, setMedia] =
     useState<MediaUpdate>(EMPTY_MEDIA);
@@ -38,8 +47,30 @@ export function useMedia() {
   useTauriTypedEvent(
     TAURI_EVENTS.MEDIA_UPDATE,
     (payload: MediaUpdate) => {
+      const currentHasMedia =
+        hasMediaPayload(payload);
+
       const previous =
         previousMeaningfulStateRef.current;
+
+      if (!currentHasMedia) {
+        if (previous) {
+          emitFeatureEvent(
+            FEATURE_EVENTS.MEDIA_UNAVAILABLE,
+            {
+              app_id: previous.app_id,
+              title: previous.title,
+              artist: previous.artist,
+            },
+          );
+        }
+
+        previousMeaningfulStateRef.current =
+          null;
+
+        setMedia(payload);
+        return;
+      }
 
       const next: MeaningfulMediaState = {
         app_id: payload.app_id,
@@ -48,64 +79,87 @@ export function useMedia() {
         is_playing: payload.is_playing,
       };
 
-      if (previous) {
-        const trackChanged =
-          previous.app_id !== next.app_id ||
-          previous.title !== next.title ||
-          previous.artist !== next.artist;
+      /**
+       * First discovered media session.
+       *
+       * This is availability, not playback start.
+       * A session may already be playing when
+       * Archipelago starts.
+       */
+      if (!previous) {
+        emitFeatureEvent(
+          FEATURE_EVENTS.MEDIA_AVAILABLE,
+          {
+            app_id: payload.app_id,
+            title: payload.title,
+            artist: payload.artist,
+            is_playing: payload.is_playing,
+          },
+        );
 
-        const playbackStarted =
-          !previous.is_playing &&
-          next.is_playing;
+        previousMeaningfulStateRef.current =
+          next;
 
-        const playbackPaused =
-          previous.is_playing &&
-          !next.is_playing;
-
-        if (playbackStarted) {
-          emitFeatureEvent(
-            FEATURE_EVENTS.MEDIA_STARTED,
-            {
-              app_id: payload.app_id,
-              title: payload.title,
-              artist: payload.artist,
-            },
-          );
-        }
-
-        if (playbackPaused) {
-          emitFeatureEvent(
-            FEATURE_EVENTS.MEDIA_PAUSED,
-            {
-              app_id: payload.app_id,
-              title: payload.title,
-              artist: payload.artist,
-            },
-          );
-        }
-
-        if (trackChanged) {
-          emitFeatureEvent(
-            FEATURE_EVENTS.MEDIA_CHANGED,
-            {
-              app_id: payload.app_id,
-              title: payload.title,
-              artist: payload.artist,
-              is_playing: payload.is_playing,
-            },
-          );
-        }
+        setMedia(payload);
+        return;
       }
 
-      previousMeaningfulStateRef.current = next;
+      const trackChanged =
+        previous.app_id !== next.app_id ||
+        previous.title !== next.title ||
+        previous.artist !== next.artist;
+
+      const playbackStarted =
+        !previous.is_playing &&
+        next.is_playing;
+
+      const playbackPaused =
+        previous.is_playing &&
+        !next.is_playing;
+
+      if (playbackStarted) {
+        emitFeatureEvent(
+          FEATURE_EVENTS.MEDIA_STARTED,
+          {
+            app_id: payload.app_id,
+            title: payload.title,
+            artist: payload.artist,
+          },
+        );
+      }
+
+      if (playbackPaused) {
+        emitFeatureEvent(
+          FEATURE_EVENTS.MEDIA_PAUSED,
+          {
+            app_id: payload.app_id,
+            title: payload.title,
+            artist: payload.artist,
+          },
+        );
+      }
+
+      if (trackChanged) {
+        emitFeatureEvent(
+          FEATURE_EVENTS.MEDIA_CHANGED,
+          {
+            app_id: payload.app_id,
+            title: payload.title,
+            artist: payload.artist,
+            is_playing: payload.is_playing,
+          },
+        );
+      }
+
+      previousMeaningfulStateRef.current =
+        next;
+
       setMedia(payload);
     },
   );
 
   return {
     media,
-    hasMedia:
-      media.title.length > 0 ||
-      media.artist.length > 0,
+    hasMedia: hasMediaPayload(media),
   };
 }

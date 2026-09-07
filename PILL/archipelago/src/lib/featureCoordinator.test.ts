@@ -13,6 +13,34 @@ import {
 } from './featureCoordinator';
 
 describe('featureCoordinator', () => {
+  it('activates media when media becomes available', () => {
+    expect(
+      getFeatureEventActions(
+        FEATURE_EVENTS.MEDIA_AVAILABLE,
+      ),
+    ).toEqual([
+      {
+        type: 'setActive',
+        widgetId: 'media',
+        active: true,
+      },
+    ]);
+  });
+
+  it('deactivates media when media becomes unavailable', () => {
+    expect(
+      getFeatureEventActions(
+        FEATURE_EVENTS.MEDIA_UNAVAILABLE,
+      ),
+    ).toEqual([
+      {
+        type: 'setActive',
+        widgetId: 'media',
+        active: false,
+      },
+    ]);
+  });
+
   it('activates media for media.started', () => {
     expect(
       getFeatureEventActions(

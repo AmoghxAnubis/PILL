@@ -36,6 +36,24 @@ export function useFeatureCoordinator(): void {
   );
 
   useFeatureEvent(
+    FEATURE_EVENTS.MEDIA_AVAILABLE,
+    () => {
+      applyEventActions(
+        FEATURE_EVENTS.MEDIA_AVAILABLE,
+      );
+    },
+  );
+
+  useFeatureEvent(
+    FEATURE_EVENTS.MEDIA_UNAVAILABLE,
+    () => {
+      applyEventActions(
+        FEATURE_EVENTS.MEDIA_UNAVAILABLE,
+      );
+    },
+  );
+
+  useFeatureEvent(
     FEATURE_EVENTS.MEDIA_STARTED,
     () => {
       applyEventActions(

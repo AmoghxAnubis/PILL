@@ -1,4 +1,8 @@
-import { act, renderHook } from '@testing-library/react';
+import {
+  act,
+  renderHook,
+} from '@testing-library/react';
+
 import {
   afterEach,
   beforeEach,
@@ -32,7 +36,10 @@ vi.mock('../lib/tauriEvents', async () => {
         eventName: string,
         handler: (payload: unknown) => void,
       ) => {
-        listeners.set(eventName, handler);
+        listeners.set(
+          eventName,
+          handler,
+        );
       },
     ),
   };
@@ -51,10 +58,21 @@ describe('useMedia', () => {
     const { result } =
       renderHook(() => useMedia());
 
-    expect(result.current.hasMedia).toBe(false);
-    expect(result.current.media.title).toBe('');
-    expect(result.current.media.artist).toBe('');
-    expect(result.current.media.is_playing).toBe(false);
+    expect(result.current.hasMedia).toBe(
+      false,
+    );
+
+    expect(result.current.media.title).toBe(
+      '',
+    );
+
+    expect(result.current.media.artist).toBe(
+      '',
+    );
+
+    expect(
+      result.current.media.is_playing,
+    ).toBe(false);
   });
 
   it('updates media from media_update events', () => {
@@ -78,51 +96,43 @@ describe('useMedia', () => {
       });
     });
 
-    expect(result.current.hasMedia).toBe(true);
+    expect(result.current.hasMedia).toBe(
+      true,
+    );
+
     expect(result.current.media.title).toBe(
       'Test Song',
     );
+
     expect(result.current.media.artist).toBe(
       'Test Artist',
     );
+
     expect(
       result.current.media.is_playing,
     ).toBe(true);
+
     expect(
       result.current.media.position,
     ).toBe(30);
   });
 
-  it('does not emit an event for the first media payload', () => {
-    const startedHandler = vi.fn();
-    const pausedHandler = vi.fn();
-    const changedHandler = vi.fn();
+  it('emits media.available for the first discovered media session', () => {
+    const handler = vi.fn();
 
-    const unsubStarted =
+    const unsubscribe =
       subscribeToFeatureEvent(
-        FEATURE_EVENTS.MEDIA_STARTED,
-        startedHandler,
-      );
-
-    const unsubPaused =
-      subscribeToFeatureEvent(
-        FEATURE_EVENTS.MEDIA_PAUSED,
-        pausedHandler,
-      );
-
-    const unsubChanged =
-      subscribeToFeatureEvent(
-        FEATURE_EVENTS.MEDIA_CHANGED,
-        changedHandler,
+        FEATURE_EVENTS.MEDIA_AVAILABLE,
+        handler,
       );
 
     renderHook(() => useMedia());
 
-    const handler =
+    const mediaHandler =
       listeners.get('media_update');
 
     act(() => {
-      handler?.({
+      mediaHandler?.({
         app_id: 'Spotify',
         title: 'Test Song',
         artist: 'Test Artist',
@@ -133,13 +143,49 @@ describe('useMedia', () => {
       });
     });
 
-    expect(startedHandler).not.toHaveBeenCalled();
-    expect(pausedHandler).not.toHaveBeenCalled();
-    expect(changedHandler).not.toHaveBeenCalled();
+    expect(handler).toHaveBeenCalledTimes(1);
 
-    unsubStarted();
-    unsubPaused();
-    unsubChanged();
+    expect(handler).toHaveBeenCalledWith({
+      app_id: 'Spotify',
+      title: 'Test Song',
+      artist: 'Test Artist',
+      is_playing: true,
+    });
+
+    unsubscribe();
+  });
+
+  it('does not emit media.started for the first discovered session', () => {
+    const handler = vi.fn();
+
+    const unsubscribe =
+      subscribeToFeatureEvent(
+        FEATURE_EVENTS.MEDIA_STARTED,
+        handler,
+      );
+
+    renderHook(() => useMedia());
+
+    const mediaHandler =
+      listeners.get('media_update');
+
+    act(() => {
+      mediaHandler?.({
+        app_id: 'Spotify',
+        title: 'Test Song',
+        artist: 'Test Artist',
+        is_playing: true,
+        duration: 240,
+        position: 0,
+        artwork: null,
+      });
+    });
+
+    expect(
+      handler,
+    ).not.toHaveBeenCalled();
+
+    unsubscribe();
   });
 
   it('emits media.started when playback changes from paused to playing', () => {
@@ -155,8 +201,6 @@ describe('useMedia', () => {
 
     const mediaHandler =
       listeners.get('media_update');
-
-    expect(mediaHandler).toBeDefined();
 
     act(() => {
       mediaHandler?.({
@@ -207,8 +251,6 @@ describe('useMedia', () => {
     const mediaHandler =
       listeners.get('media_update');
 
-    expect(mediaHandler).toBeDefined();
-
     act(() => {
       mediaHandler?.({
         app_id: 'Spotify',
@@ -257,8 +299,6 @@ describe('useMedia', () => {
 
     const mediaHandler =
       listeners.get('media_update');
-
-    expect(mediaHandler).toBeDefined();
 
     act(() => {
       mediaHandler?.({
@@ -310,8 +350,6 @@ describe('useMedia', () => {
     const mediaHandler =
       listeners.get('media_update');
 
-    expect(mediaHandler).toBeDefined();
-
     act(() => {
       mediaHandler?.({
         app_id: 'Spotify',
@@ -348,7 +386,9 @@ describe('useMedia', () => {
       });
     });
 
-    expect(handler).not.toHaveBeenCalled();
+    expect(
+      handler,
+    ).not.toHaveBeenCalled();
 
     unsubscribe();
   });
@@ -391,7 +431,9 @@ describe('useMedia', () => {
       });
     });
 
-    expect(handler).not.toHaveBeenCalled();
+    expect(
+      handler,
+    ).not.toHaveBeenCalled();
 
     unsubscribe();
   });
@@ -434,7 +476,137 @@ describe('useMedia', () => {
       });
     });
 
-    expect(handler).not.toHaveBeenCalled();
+    expect(
+      handler,
+    ).not.toHaveBeenCalled();
+
+    unsubscribe();
+  });
+
+  it('emits media.unavailable when the media session disappears', () => {
+    const handler = vi.fn();
+
+    const unsubscribe =
+      subscribeToFeatureEvent(
+        FEATURE_EVENTS.MEDIA_UNAVAILABLE,
+        handler,
+      );
+
+    renderHook(() => useMedia());
+
+    const mediaHandler =
+      listeners.get('media_update');
+
+    act(() => {
+      mediaHandler?.({
+        app_id: 'Spotify',
+        title: 'Test Song',
+        artist: 'Test Artist',
+        is_playing: true,
+        duration: 240,
+        position: 40,
+        artwork: null,
+      });
+    });
+
+    act(() => {
+      mediaHandler?.({
+        app_id: '',
+        title: '',
+        artist: '',
+        is_playing: false,
+        duration: 0,
+        position: 0,
+        artwork: null,
+      });
+    });
+
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    expect(handler).toHaveBeenCalledWith({
+      app_id: 'Spotify',
+      title: 'Test Song',
+      artist: 'Test Artist',
+    });
+
+    unsubscribe();
+  });
+
+  it('emits media.available again after a session disappears and returns', () => {
+    const handler = vi.fn();
+
+    const unsubscribe =
+      subscribeToFeatureEvent(
+        FEATURE_EVENTS.MEDIA_AVAILABLE,
+        handler,
+      );
+
+    renderHook(() => useMedia());
+
+    const mediaHandler =
+      listeners.get('media_update');
+
+    act(() => {
+      mediaHandler?.({
+        app_id: 'Spotify',
+        title: 'First Song',
+        artist: 'Artist One',
+        is_playing: true,
+        duration: 240,
+        position: 0,
+        artwork: null,
+      });
+    });
+
+    act(() => {
+      mediaHandler?.({
+        app_id: '',
+        title: '',
+        artist: '',
+        is_playing: false,
+        duration: 0,
+        position: 0,
+        artwork: null,
+      });
+    });
+
+    act(() => {
+      mediaHandler?.({
+        app_id: 'Spotify',
+        title: 'Second Song',
+        artist: 'Artist Two',
+        is_playing: true,
+        duration: 180,
+        position: 0,
+        artwork: null,
+      });
+    });
+
+    expect(handler).toHaveBeenCalledTimes(2);
+
+    expect(
+      handler,
+    ).toHaveBeenNthCalledWith(
+      1,
+      {
+        app_id: 'Spotify',
+        title: 'First Song',
+        artist: 'Artist One',
+        is_playing: true,
+      },
+    );
+
+    expect(
+      handler,
+    ).toHaveBeenNthCalledWith(
+      2,
+      {
+        app_id: 'Spotify',
+        title: 'Second Song',
+        artist: 'Artist Two',
+        is_playing: true,
+      },
+    );
 
     unsubscribe();
   });

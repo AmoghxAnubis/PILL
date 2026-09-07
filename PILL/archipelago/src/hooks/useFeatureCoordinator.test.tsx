@@ -13,7 +13,9 @@ import {
   FEATURE_EVENTS,
 } from '../lib/featureEvents';
 
-import { useFeatureCoordinator } from './useFeatureCoordinator';
+import {
+  useFeatureCoordinator,
+} from './useFeatureCoordinator';
 
 import {
   useWidgetStore,
@@ -23,7 +25,9 @@ vi.mock('./useFeatureEvent', () => ({
   useFeatureEvent: vi.fn(),
 }));
 
-import { useFeatureEvent } from './useFeatureEvent';
+import {
+  useFeatureEvent,
+} from './useFeatureEvent';
 
 describe('useFeatureCoordinator', () => {
   let handlers: Map<
@@ -40,8 +44,13 @@ describe('useFeatureCoordinator', () => {
 
     vi.clearAllMocks();
 
-    vi.mocked(useFeatureEvent).mockImplementation(
-      ((eventName: string, handler: () => void) => {
+    vi.mocked(
+      useFeatureEvent,
+    ).mockImplementation(
+      ((
+        eventName: string,
+        handler: () => void,
+      ) => {
         handlers.set(
           eventName,
           handler,
@@ -61,7 +70,19 @@ describe('useFeatureCoordinator', () => {
 
     expect(
       useFeatureEvent,
-    ).toHaveBeenCalledTimes(9);
+    ).toHaveBeenCalledTimes(11);
+
+    expect(
+      handlers.has(
+        FEATURE_EVENTS.MEDIA_AVAILABLE,
+      ),
+    ).toBe(true);
+
+    expect(
+      handlers.has(
+        FEATURE_EVENTS.MEDIA_UNAVAILABLE,
+      ),
+    ).toBe(true);
 
     expect(
       handlers.has(
@@ -118,13 +139,58 @@ describe('useFeatureCoordinator', () => {
     ).toBe(true);
   });
 
+  it('activates media when media becomes available', () => {
+    renderHook(() =>
+      useFeatureCoordinator(),
+    );
+
+    handlers
+      .get(
+        FEATURE_EVENTS.MEDIA_AVAILABLE,
+      )
+      ?.();
+
+    expect(
+      useWidgetStore
+        .getState()
+        .activeWidgets,
+    ).toEqual(['media']);
+  });
+
+  it('deactivates media when media becomes unavailable', () => {
+    useWidgetStore.setState({
+      activeWidgets: [
+        'media',
+        'focusTimer',
+      ],
+    });
+
+    renderHook(() =>
+      useFeatureCoordinator(),
+    );
+
+    handlers
+      .get(
+        FEATURE_EVENTS.MEDIA_UNAVAILABLE,
+      )
+      ?.();
+
+    expect(
+      useWidgetStore
+        .getState()
+        .activeWidgets,
+    ).toEqual(['focusTimer']);
+  });
+
   it('activates media when media.started occurs', () => {
     renderHook(() =>
       useFeatureCoordinator(),
     );
 
     handlers
-      .get(FEATURE_EVENTS.MEDIA_STARTED)
+      .get(
+        FEATURE_EVENTS.MEDIA_STARTED,
+      )
       ?.();
 
     expect(
@@ -230,11 +296,15 @@ describe('useFeatureCoordinator', () => {
     );
 
     handlers
-      .get(FEATURE_EVENTS.MEDIA_STARTED)
+      .get(
+        FEATURE_EVENTS.MEDIA_AVAILABLE,
+      )
       ?.();
 
     handlers
-      .get(FEATURE_EVENTS.MEDIA_STARTED)
+      .get(
+        FEATURE_EVENTS.MEDIA_AVAILABLE,
+      )
       ?.();
 
     expect(

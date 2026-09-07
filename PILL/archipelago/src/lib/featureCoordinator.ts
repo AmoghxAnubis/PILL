@@ -5,17 +5,34 @@ import {
 
 import type { WidgetId } from '../store/widgetStore';
 
-export type FeatureCoordinatorAction =
-  | {
-      type: 'setActive';
-      widgetId: WidgetId;
-      active: boolean;
-    };
+export type FeatureCoordinatorAction = {
+  type: 'setActive';
+  widgetId: WidgetId;
+  active: boolean;
+};
 
 export function getFeatureEventActions(
   eventName: FeatureEventName,
 ): FeatureCoordinatorAction[] {
   switch (eventName) {
+    case FEATURE_EVENTS.MEDIA_AVAILABLE:
+      return [
+        {
+          type: 'setActive',
+          widgetId: 'media',
+          active: true,
+        },
+      ];
+
+    case FEATURE_EVENTS.MEDIA_UNAVAILABLE:
+      return [
+        {
+          type: 'setActive',
+          widgetId: 'media',
+          active: false,
+        },
+      ];
+
     case FEATURE_EVENTS.MEDIA_STARTED:
     case FEATURE_EVENTS.MEDIA_PAUSED:
     case FEATURE_EVENTS.MEDIA_CHANGED:
