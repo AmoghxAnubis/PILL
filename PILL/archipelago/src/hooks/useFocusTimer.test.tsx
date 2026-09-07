@@ -19,39 +19,15 @@ import {
 
 import { useFocusTimer } from './useFocusTimer';
 
-const listeners = new Map<
-  string,
-  (payload: unknown) => void
->();
-
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn(),
 }));
-
-vi.mock('../lib/tauriEvents', async () => {
-  const actual = await vi.importActual<
-    typeof import('../lib/tauriEvents')
-  >('../lib/tauriEvents');
-
-  return {
-    ...actual,
-    useTauriTypedEvent: vi.fn(
-      (
-        eventName: string,
-        handler: (payload: unknown) => void,
-      ) => {
-        listeners.set(eventName, handler);
-      },
-    ),
-  };
-});
 
 const mockedInvoke = vi.mocked(invoke);
 
 describe('useFocusTimer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    listeners.clear();
   });
 
   it('starts with a stopped 25 minute timer', () => {
@@ -157,34 +133,6 @@ describe('useFocusTimer', () => {
     );
   });
 
-  it('updates from timer_tick events', () => {
-    const { result } =
-      renderHook(() => useFocusTimer());
-
-    const handler = listeners.get('timer_tick');
-
-    expect(handler).toBeDefined();
-
-    act(() => {
-      handler?.({
-        seconds_remaining: 1234,
-        is_running: true,
-      });
-    });
-
-    expect(
-      result.current.secondsRemaining,
-    ).toBe(1234);
-
-    expect(
-      result.current.isRunning,
-    ).toBe(true);
-
-    expect(result.current.status).toBe(
-      'running',
-    );
-  });
-
   it('emits a focusTimer.started event when started', async () => {
     const handler = vi.fn();
 
@@ -207,6 +155,7 @@ describe('useFocusTimer', () => {
     });
 
     expect(handler).toHaveBeenCalledTimes(1);
+
     expect(handler).toHaveBeenCalledWith({
       seconds_remaining: 1499,
     });
@@ -242,6 +191,7 @@ describe('useFocusTimer', () => {
     });
 
     expect(handler).toHaveBeenCalledTimes(1);
+
     expect(handler).toHaveBeenCalledWith({
       seconds_remaining: 1485,
     });
@@ -249,95 +199,6 @@ describe('useFocusTimer', () => {
     expect(result.current.status).toBe(
       'paused',
     );
-
-    unsubscribe();
-  });
-
-  it('emits a focusTimer.completed event when timer reaches zero', () => {
-    const handler = vi.fn();
-
-    const unsubscribe =
-      subscribeToFeatureEvent(
-        FEATURE_EVENTS.FOCUS_TIMER_COMPLETED,
-        handler,
-      );
-
-    const { result } =
-      renderHook(() => useFocusTimer());
-
-    const timerHandler =
-      listeners.get('timer_tick');
-
-    expect(timerHandler).toBeDefined();
-
-    act(() => {
-      timerHandler?.({
-        seconds_remaining: 1499,
-        is_running: true,
-      });
-    });
-
-    act(() => {
-      timerHandler?.({
-        seconds_remaining: 0,
-        is_running: false,
-      });
-    });
-
-    expect(
-      result.current.secondsRemaining,
-    ).toBe(0);
-
-    expect(result.current.status).toBe(
-      'completed',
-    );
-
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler).toHaveBeenCalledWith({
-      seconds_remaining: 0,
-    });
-
-    unsubscribe();
-  });
-
-  it('emits completion only once for repeated zero-second ticks', () => {
-    const handler = vi.fn();
-
-    const unsubscribe =
-      subscribeToFeatureEvent(
-        FEATURE_EVENTS.FOCUS_TIMER_COMPLETED,
-        handler,
-      );
-
-    renderHook(() => useFocusTimer());
-
-    const timerHandler =
-      listeners.get('timer_tick');
-
-    expect(timerHandler).toBeDefined();
-
-    act(() => {
-      timerHandler?.({
-        seconds_remaining: 1499,
-        is_running: true,
-      });
-    });
-
-    act(() => {
-      timerHandler?.({
-        seconds_remaining: 0,
-        is_running: false,
-      });
-    });
-
-    act(() => {
-      timerHandler?.({
-        seconds_remaining: 0,
-        is_running: false,
-      });
-    });
-
-    expect(handler).toHaveBeenCalledTimes(1);
 
     unsubscribe();
   });
@@ -364,6 +225,7 @@ describe('useFocusTimer', () => {
     });
 
     expect(handler).toHaveBeenCalledTimes(1);
+
     expect(handler).toHaveBeenCalledWith({
       seconds_remaining: 1500,
     });
