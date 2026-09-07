@@ -26,10 +26,10 @@ vi.mock('./useFeatureEvent', () => ({
 import { useFeatureEvent } from './useFeatureEvent';
 
 describe('useFeatureCoordinator', () => {
-  let handlers = new Map<
+  let handlers: Map<
     string,
     () => void
-  >();
+  >;
 
   beforeEach(() => {
     handlers = new Map();
@@ -42,7 +42,10 @@ describe('useFeatureCoordinator', () => {
 
     vi.mocked(useFeatureEvent).mockImplementation(
       ((eventName: string, handler: () => void) => {
-        handlers.set(eventName, handler);
+        handlers.set(
+          eventName,
+          handler,
+        );
       }) as typeof useFeatureEvent,
     );
   });
@@ -58,7 +61,7 @@ describe('useFeatureCoordinator', () => {
 
     expect(
       useFeatureEvent,
-    ).toHaveBeenCalledTimes(8);
+    ).toHaveBeenCalledTimes(9);
 
     expect(
       handlers.has(
@@ -105,6 +108,12 @@ describe('useFeatureCoordinator', () => {
     expect(
       handlers.has(
         FEATURE_EVENTS.TELEMETRY_WARNING,
+      ),
+    ).toBe(true);
+
+    expect(
+      handlers.has(
+        FEATURE_EVENTS.TELEMETRY_NORMAL,
       ),
     ).toBe(true);
   });
@@ -184,6 +193,31 @@ describe('useFeatureCoordinator', () => {
         .getState()
         .activeWidgets,
     ).toEqual(['telemetry']);
+  });
+
+  it('deactivates telemetry when warning clears', () => {
+    useWidgetStore.setState({
+      activeWidgets: [
+        'media',
+        'telemetry',
+      ],
+    });
+
+    renderHook(() =>
+      useFeatureCoordinator(),
+    );
+
+    handlers
+      .get(
+        FEATURE_EVENTS.TELEMETRY_NORMAL,
+      )
+      ?.();
+
+    expect(
+      useWidgetStore
+        .getState()
+        .activeWidgets,
+    ).toEqual(['media']);
   });
 
   it('does not duplicate an already active widget', () => {

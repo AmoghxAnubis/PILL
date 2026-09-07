@@ -36,6 +36,7 @@ describe('featureEvents', () => {
     );
 
     expect(handler).toHaveBeenCalledTimes(1);
+
     expect(handler).toHaveBeenCalledWith({
       app_id: 'Spotify',
       title: 'Test Song',
@@ -64,8 +65,13 @@ describe('featureEvents', () => {
       },
     );
 
-    expect(firstHandler).toHaveBeenCalledTimes(1);
-    expect(secondHandler).toHaveBeenCalledTimes(1);
+    expect(
+      firstHandler,
+    ).toHaveBeenCalledTimes(1);
+
+    expect(
+      secondHandler,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('unsubscribes a listener', () => {
@@ -88,7 +94,9 @@ describe('featureEvents', () => {
       },
     );
 
-    expect(handler).not.toHaveBeenCalled();
+    expect(
+      handler,
+    ).not.toHaveBeenCalled();
   });
 
   it('does not deliver events across different event names', () => {
@@ -114,8 +122,13 @@ describe('featureEvents', () => {
       },
     );
 
-    expect(mediaHandler).toHaveBeenCalledTimes(1);
-    expect(timerHandler).not.toHaveBeenCalled();
+    expect(
+      mediaHandler,
+    ).toHaveBeenCalledTimes(1);
+
+    expect(
+      timerHandler,
+    ).not.toHaveBeenCalled();
   });
 
   it('allows the same handler to be removed cleanly', () => {
@@ -128,7 +141,6 @@ describe('featureEvents', () => {
       );
 
     unsubscribe();
-
     unsubscribe();
 
     emitFeatureEvent(
@@ -139,7 +151,9 @@ describe('featureEvents', () => {
       },
     );
 
-    expect(handler).not.toHaveBeenCalled();
+    expect(
+      handler,
+    ).not.toHaveBeenCalled();
   });
 
   it('silently ignores events with no subscribers', () => {
@@ -151,5 +165,33 @@ describe('featureEvents', () => {
         },
       );
     }).not.toThrow();
+  });
+
+  it('supports telemetry.normal events', () => {
+    const handler = vi.fn();
+
+    subscribeToFeatureEvent(
+      FEATURE_EVENTS.TELEMETRY_NORMAL,
+      handler,
+    );
+
+    emitFeatureEvent(
+      FEATURE_EVENTS.TELEMETRY_NORMAL,
+      {
+        cpu_usage: 62,
+        ram_percentage: 58,
+      },
+    );
+
+    expect(
+      handler,
+    ).toHaveBeenCalledTimes(1);
+
+    expect(
+      handler,
+    ).toHaveBeenCalledWith({
+      cpu_usage: 62,
+      ram_percentage: 58,
+    });
   });
 });

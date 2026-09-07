@@ -67,15 +67,19 @@ export interface FeatureEventPayloads {
 
   [FEATURE_EVENTS.FOCUS_TIMER_STARTED]:
     FocusTimerStartedPayload;
+
   [FEATURE_EVENTS.FOCUS_TIMER_PAUSED]:
     FocusTimerPausedPayload;
+
   [FEATURE_EVENTS.FOCUS_TIMER_COMPLETED]:
     FocusTimerCompletedPayload;
+
   [FEATURE_EVENTS.FOCUS_TIMER_RESET]:
     FocusTimerResetPayload;
 
   [FEATURE_EVENTS.TELEMETRY_WARNING]:
     TelemetryWarningPayload;
+
   [FEATURE_EVENTS.TELEMETRY_NORMAL]:
     TelemetryNormalPayload;
 }
@@ -158,26 +162,3 @@ export function subscribeToFeatureEvent<
 export function clearFeatureEventListeners(): void {
   listeners.clear();
 }
-it('supports telemetry.normal events', () => {
-  const handler = vi.fn();
-
-  subscribeToFeatureEvent(
-    FEATURE_EVENTS.TELEMETRY_NORMAL,
-    handler,
-  );
-
-  emitFeatureEvent(
-    FEATURE_EVENTS.TELEMETRY_NORMAL,
-    {
-      cpu_usage: 62,
-      ram_percentage: 58,
-    },
-  );
-
-  expect(handler).toHaveBeenCalledTimes(1);
-
-  expect(handler).toHaveBeenCalledWith({
-    cpu_usage: 62,
-    ram_percentage: 58,
-  });
-});
