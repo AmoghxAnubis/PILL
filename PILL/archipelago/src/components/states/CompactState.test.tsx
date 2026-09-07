@@ -44,9 +44,10 @@ afterEach(() => {
 });
 
 describe('CompactState', () => {
-  const defaultTimerState = {
+  const defaultTimerState: ReturnType<typeof useFocusTimer> = {
     secondsRemaining: 25 * 60,
     isRunning: false,
+    status: 'idle',
     start: vi.fn(),
     pause: vi.fn(),
     reset: vi.fn(),
@@ -66,7 +67,9 @@ describe('CompactState', () => {
       hasMedia: true,
     });
 
-    mockedUseFocusTimer.mockReturnValue(defaultTimerState);
+    mockedUseFocusTimer.mockReturnValue(
+      defaultTimerState,
+    );
 
     render(<CompactState />);
 
@@ -101,7 +104,9 @@ describe('CompactState', () => {
       hasMedia: true,
     });
 
-    mockedUseFocusTimer.mockReturnValue(defaultTimerState);
+    mockedUseFocusTimer.mockReturnValue(
+      defaultTimerState,
+    );
 
     render(<CompactState />);
 
@@ -128,7 +133,9 @@ describe('CompactState', () => {
       hasMedia: false,
     });
 
-    mockedUseFocusTimer.mockReturnValue(defaultTimerState);
+    mockedUseFocusTimer.mockReturnValue(
+      defaultTimerState,
+    );
 
     render(<CompactState />);
 
@@ -163,6 +170,7 @@ describe('CompactState', () => {
       ...defaultTimerState,
       secondsRemaining: 1490,
       isRunning: true,
+      status: 'running',
     });
 
     render(<CompactState />);

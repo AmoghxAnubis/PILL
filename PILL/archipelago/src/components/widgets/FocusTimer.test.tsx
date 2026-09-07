@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FocusTimer } from './FocusTimer';
 import { useFocusTimer } from '../../hooks/useFocusTimer';
@@ -10,7 +10,6 @@ vi.mock('../../hooks/useFocusTimer', () => ({
 const mockedUseFocusTimer = vi.mocked(useFocusTimer);
 
 afterEach(() => {
-  cleanup();
   vi.clearAllMocks();
 });
 
@@ -19,6 +18,7 @@ describe('FocusTimer', () => {
     mockedUseFocusTimer.mockReturnValue({
       secondsRemaining: 25 * 60,
       isRunning: false,
+      status: 'idle',
       start: vi.fn(),
       pause: vi.fn(),
       reset: vi.fn(),
@@ -26,13 +26,16 @@ describe('FocusTimer', () => {
 
     render(<FocusTimer />);
 
-    expect(screen.getByText('25:00')).toBeInTheDocument();
+    expect(
+      screen.getByText('25:00'),
+    ).toBeInTheDocument();
   });
 
   it('shows start control when stopped', () => {
     mockedUseFocusTimer.mockReturnValue({
       secondsRemaining: 1500,
       isRunning: false,
+      status: 'idle',
       start: vi.fn(),
       pause: vi.fn(),
       reset: vi.fn(),
@@ -51,6 +54,7 @@ describe('FocusTimer', () => {
     mockedUseFocusTimer.mockReturnValue({
       secondsRemaining: 1499,
       isRunning: true,
+      status: 'running',
       start: vi.fn(),
       pause: vi.fn(),
       reset: vi.fn(),
@@ -71,6 +75,7 @@ describe('FocusTimer', () => {
     mockedUseFocusTimer.mockReturnValue({
       secondsRemaining: 1500,
       isRunning: false,
+      status: 'idle',
       start,
       pause: vi.fn(),
       reset: vi.fn(),
@@ -95,6 +100,7 @@ describe('FocusTimer', () => {
     mockedUseFocusTimer.mockReturnValue({
       secondsRemaining: 1499,
       isRunning: true,
+      status: 'running',
       start: vi.fn(),
       pause,
       reset: vi.fn(),
@@ -119,6 +125,7 @@ describe('FocusTimer', () => {
     mockedUseFocusTimer.mockReturnValue({
       secondsRemaining: 1200,
       isRunning: true,
+      status: 'running',
       start: vi.fn(),
       pause: vi.fn(),
       reset,
