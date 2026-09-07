@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import { useEvasion } from '../../hooks/useEvasion';
 import { useIslandState } from '../../hooks/useIslandState';
+import { useWidgetActivity } from '../../hooks/useWidgetActivity';
 
 import {
   ISLAND_DIMENSIONS,
@@ -25,11 +26,15 @@ import './Island.css';
  * - Spring-based size animations
  * - Unified visibility state
  * - Fullscreen/evasion behavior
+ * - Widget activity synchronization
  * - Rendering of the appropriate state content
  */
 export function Island() {
   // Subscribe to fullscreen/evasion events.
   useEvasion();
+
+  // Synchronize feature activity with widgetStore.
+  useWidgetActivity();
 
   const {
     state,
@@ -144,4 +149,4 @@ export function Island() {
       </motion.div>
     </div>
   );
-} 
+}
