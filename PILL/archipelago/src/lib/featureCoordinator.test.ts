@@ -20,8 +20,9 @@ describe('featureCoordinator', () => {
       ),
     ).toEqual([
       {
-        type: 'activate',
+        type: 'setActive',
         widgetId: 'media',
+        active: true,
       },
     ]);
   });
@@ -33,8 +34,9 @@ describe('featureCoordinator', () => {
       ),
     ).toEqual([
       {
-        type: 'activate',
+        type: 'setActive',
         widgetId: 'media',
+        active: true,
       },
     ]);
   });
@@ -46,8 +48,9 @@ describe('featureCoordinator', () => {
       ),
     ).toEqual([
       {
-        type: 'activate',
+        type: 'setActive',
         widgetId: 'media',
+        active: true,
       },
     ]);
   });
@@ -59,8 +62,9 @@ describe('featureCoordinator', () => {
       ),
     ).toEqual([
       {
-        type: 'activate',
+        type: 'setActive',
         widgetId: 'focusTimer',
+        active: true,
       },
     ]);
   });
@@ -72,8 +76,9 @@ describe('featureCoordinator', () => {
       ),
     ).toEqual([
       {
-        type: 'activate',
+        type: 'setActive',
         widgetId: 'focusTimer',
+        active: true,
       },
     ]);
   });
@@ -85,8 +90,9 @@ describe('featureCoordinator', () => {
       ),
     ).toEqual([
       {
-        type: 'activate',
+        type: 'setActive',
         widgetId: 'focusTimer',
+        active: true,
       },
     ]);
   });
@@ -98,8 +104,9 @@ describe('featureCoordinator', () => {
       ),
     ).toEqual([
       {
-        type: 'deactivate',
+        type: 'setActive',
         widgetId: 'focusTimer',
+        active: false,
       },
     ]);
   });
@@ -111,8 +118,23 @@ describe('featureCoordinator', () => {
       ),
     ).toEqual([
       {
-        type: 'activate',
+        type: 'setActive',
         widgetId: 'telemetry',
+        active: true,
+      },
+    ]);
+  });
+
+  it('deactivates telemetry when warning clears', () => {
+    expect(
+      getFeatureEventActions(
+        FEATURE_EVENTS.TELEMETRY_NORMAL,
+      ),
+    ).toEqual([
+      {
+        type: 'setActive',
+        widgetId: 'telemetry',
+        active: false,
       },
     ]);
   });
