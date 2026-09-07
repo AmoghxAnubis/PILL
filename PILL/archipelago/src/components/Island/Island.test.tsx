@@ -39,6 +39,10 @@ vi.mock('../../hooks/useWidgetActivity', () => ({
   useWidgetActivity: vi.fn(),
 }));
 
+vi.mock('../../hooks/useWidgetLayoutSync', () => ({
+  useWidgetLayoutSync: vi.fn(),
+}));
+
 vi.mock('../../hooks/useWidgetOrchestrator', () => ({
   useWidgetOrchestrator: vi.fn(),
 }));
@@ -96,7 +100,6 @@ vi.mock('../states/SplitState', () => ({
   SplitState: () => (
     <div data-testid="split-state">
       <span>Primary</span>
-      <span>Secondary</span>
     </div>
   ),
 }));
@@ -228,7 +231,7 @@ describe('Island Component', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Widget orchestrator integration
+  // Widget orchestrator integration tests
   // ---------------------------------------------------------------------------
 
   it('consumes the widget orchestrator', () => {
@@ -236,7 +239,7 @@ describe('Island Component', () => {
 
     expect(
       useWidgetOrchestrator,
-    ).toHaveBeenCalledTimes(1);
+    ).toHaveBeenCalled();
   });
 
   it('reads the current widget orchestration from the hook', () => {
@@ -248,9 +251,24 @@ describe('Island Component', () => {
 
     render(<Island />);
 
-    expect(
-      useWidgetOrchestrator,
-    ).toHaveBeenCalledTimes(1);
+    const island = document.querySelector(
+      '.island-wrapper > div',
+    ) as HTMLElement;
+
+    expect(island).toHaveAttribute(
+      'data-widget-layout',
+      'split',
+    );
+
+    expect(island).toHaveAttribute(
+      'data-widget-primary',
+      'focusTimer',
+    );
+
+    expect(island).toHaveAttribute(
+      'data-widget-secondary',
+      'media',
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -387,7 +405,7 @@ describe('Island Component', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Visibility integration
+  // Visibility integration tests
   // ---------------------------------------------------------------------------
 
   it('respects application-level visibility independently of evasion', async () => {

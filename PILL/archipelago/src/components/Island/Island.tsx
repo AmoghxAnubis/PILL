@@ -25,8 +25,11 @@ export function Island() {
   useWidgetActivity();
   useWidgetLayoutSync();
 
-  const { state, visible, isEvasionActive } =
-    useIslandStore();
+  const {
+    state,
+    visible,
+    isEvasionActive,
+  } = useIslandStore();
 
   const widgetOrchestration =
     useWidgetOrchestrator();
@@ -54,7 +57,8 @@ export function Island() {
           widgetOrchestration.layout
         }
         data-widget-primary={
-          widgetOrchestration.primary ?? undefined
+          widgetOrchestration.primary ??
+          undefined
         }
         data-widget-secondary={
           widgetOrchestration.secondary ??
