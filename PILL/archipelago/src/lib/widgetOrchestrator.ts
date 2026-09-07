@@ -11,7 +11,10 @@ export interface WidgetOrchestration {
   secondary: WidgetId | null;
 }
 
-const WIDGET_PRIORITY: Record<WidgetId, number> = {
+const WIDGET_PRIORITY: Record<
+  WidgetId,
+  number
+> = {
   focusTimer: 3,
   media: 2,
   telemetry: 1,
@@ -42,7 +45,8 @@ export function orchestrateWidgets(
     };
   }
 
-  const ordered = sortByPriority(uniqueWidgets);
+  const ordered =
+    sortByPriority(uniqueWidgets);
 
   if (ordered.length === 1) {
     return {

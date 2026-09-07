@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
+
 import {
   orchestrateWidgets,
   type WidgetOrchestration,
 } from '../lib/widgetOrchestrator';
+
 import { useWidgetStore } from '../store/widgetStore';
 
 export function useWidgetOrchestrator(): WidgetOrchestration {
