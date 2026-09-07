@@ -8,62 +8,138 @@ export type WidgetId =
 interface WidgetStore {
   activeWidgets: WidgetId[];
 
-  isWidgetActive: (widgetId: WidgetId) => boolean;
-  activateWidget: (widgetId: WidgetId) => void;
-  deactivateWidget: (widgetId: WidgetId) => void;
-  toggleWidget: (widgetId: WidgetId) => void;
+  isWidgetActive: (
+    widgetId: WidgetId,
+  ) => boolean;
+
+  /**
+   * Explicitly sets the lifecycle state of a widget.
+   *
+   * Calling this repeatedly with the same value is a no-op.
+   */
+  setWidgetActive: (
+    widgetId: WidgetId,
+    active: boolean,
+  ) => void;
+
+  activateWidget: (
+    widgetId: WidgetId,
+  ) => void;
+
+  deactivateWidget: (
+    widgetId: WidgetId,
+  ) => void;
+
+  toggleWidget: (
+    widgetId: WidgetId,
+  ) => void;
+
   clearWidgets: () => void;
 }
 
-export const useWidgetStore = create<WidgetStore>((set, get) => ({
-  activeWidgets: [],
+export const useWidgetStore =
+  create<WidgetStore>((set, get) => ({
+    activeWidgets: [],
 
-  isWidgetActive: (widgetId) =>
-    get().activeWidgets.includes(widgetId),
+    isWidgetActive: (widgetId) =>
+      get().activeWidgets.includes(widgetId),
 
-  activateWidget: (widgetId) => {
-    set((state) => {
-      if (state.activeWidgets.includes(widgetId)) {
-        return state;
-      }
+    setWidgetActive: (widgetId, active) => {
+      set((state) => {
+        const currentlyActive =
+          state.activeWidgets.includes(
+            widgetId,
+          );
 
-      return {
-        activeWidgets: [
-          ...state.activeWidgets,
-          widgetId,
-        ],
-      };
-    });
-  },
+        if (currentlyActive === active) {
+          return state;
+        }
 
-  deactivateWidget: (widgetId) => {
-    set((state) => ({
-      activeWidgets: state.activeWidgets.filter(
-        (id) => id !== widgetId,
-      ),
-    }));
-  },
+        if (active) {
+          return {
+            activeWidgets: [
+              ...state.activeWidgets,
+              widgetId,
+            ],
+          };
+        }
 
-  toggleWidget: (widgetId) => {
-    set((state) => {
-      if (state.activeWidgets.includes(widgetId)) {
         return {
-          activeWidgets: state.activeWidgets.filter(
-            (id) => id !== widgetId,
-          ),
+          activeWidgets:
+            state.activeWidgets.filter(
+              (id) => id !== widgetId,
+            ),
         };
-      }
+      });
+    },
 
-      return {
-        activeWidgets: [
-          ...state.activeWidgets,
-          widgetId,
-        ],
-      };
-    });
-  },
+    activateWidget: (widgetId) => {
+      set((state) => {
+        if (
+          state.activeWidgets.includes(widgetId)
+        ) {
+          return state;
+        }
 
-  clearWidgets: () => {
-    set({ activeWidgets: [] });
-  },
-}));
+        return {
+          activeWidgets: [
+            ...state.activeWidgets,
+            widgetId,
+          ],
+        };
+      });
+    },
+
+    deactivateWidget: (widgetId) => {
+      set((state) => {
+        if (
+          !state.activeWidgets.includes(
+            widgetId,
+          )
+        ) {
+          return state;
+        }
+
+        return {
+          activeWidgets:
+            state.activeWidgets.filter(
+              (id) => id !== widgetId,
+            ),
+        };
+      });
+    },
+
+    toggleWidget: (widgetId) => {
+      set((state) => {
+        if (
+          state.activeWidgets.includes(widgetId)
+        ) {
+          return {
+            activeWidgets:
+              state.activeWidgets.filter(
+                (id) => id !== widgetId,
+              ),
+          };
+        }
+
+        return {
+          activeWidgets: [
+            ...state.activeWidgets,
+            widgetId,
+          ],
+        };
+      });
+    },
+
+    clearWidgets: () => {
+      set((state) => {
+        if (state.activeWidgets.length === 0) {
+          return state;
+        }
+
+        return {
+          activeWidgets: [],
+        };
+      });
+    },
+  }));
