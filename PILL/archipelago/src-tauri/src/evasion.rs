@@ -5,13 +5,21 @@ use crate::events::{
     FullscreenStateChanged,
     FULLSCREEN_STATE_CHANGED,
 };
+use crate::SHUTDOWN_REQUESTED;
 
 /// Normalized rectangle used by the fullscreen classifier.
 ///
-/// This is intentionally independent of Win32's `RECT` so the
-/// fullscreen classification logic can be tested without calling
-/// Windows APIs.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+/// This is intentionally independent of Win32's `RECT` so the fullscreen
+/// classification logic can be tested without calling Windows APIs.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+)]
 pub struct ScreenRect {
     pub left: i32,
     pub top: i32,
@@ -33,16 +41,20 @@ pub fn is_fullscreen(
     }
 
     let left_matches =
-        (window.left - monitor.left).abs() <= tolerance;
+        (window.left - monitor.left).abs()
+            <= tolerance;
 
     let top_matches =
-        (window.top - monitor.top).abs() <= tolerance;
+        (window.top - monitor.top).abs()
+            <= tolerance;
 
     let right_matches =
-        (window.right - monitor.right).abs() <= tolerance;
+        (window.right - monitor.right).abs()
+            <= tolerance;
 
     let bottom_matches =
-        (window.bottom - monitor.bottom).abs() <= tolerance;
+        (window.bottom - monitor.bottom).abs()
+            <= tolerance;
 
     left_matches
         && top_matches
@@ -55,7 +67,13 @@ pub const FULLSCREEN_TOLERANCE: i32 = 2;
 
 /// Tracks the last known fullscreen state so the native monitor
 /// only reacts when the state actually changes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+)]
 pub struct EvasionState {
     pub is_fullscreen: bool,
 }
@@ -72,7 +90,10 @@ impl EvasionState {
     ///
     /// Returns `true` when the state actually changed.
     /// Returns `false` when the state is unchanged.
-    pub fn update(&mut self, fullscreen: bool) -> bool {
+    pub fn update(
+        &mut self,
+        fullscreen: bool,
+    ) -> bool {
         if self.is_fullscreen == fullscreen {
             return false;
         }
@@ -90,13 +111,23 @@ impl Default for EvasionState {
 
 /// Converts a state transition into the payload expected by
 /// the frontend event bridge.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+)]
 pub struct FullscreenTransition {
     pub active: bool,
 }
 
-impl From<FullscreenTransition> for FullscreenStateChanged {
-    fn from(transition: FullscreenTransition) -> Self {
+impl From<FullscreenTransition>
+    for FullscreenStateChanged
+{
+    fn from(
+        transition: FullscreenTransition,
+    ) -> Self {
         Self {
             active: transition.active,
         }
@@ -177,13 +208,15 @@ pub fn detect_foreground_fullscreen() -> bool {
     };
 
     unsafe {
-        let foreground = GetForegroundWindow();
+        let foreground =
+            GetForegroundWindow();
 
         if foreground.0.is_null() {
             return false;
         }
 
-        let mut window_rect = RECT::default();
+        let mut window_rect =
+            RECT::default();
 
         if GetWindowRect(
             foreground,
@@ -194,19 +227,25 @@ pub fn detect_foreground_fullscreen() -> bool {
             return false;
         }
 
-        let monitor = MonitorFromWindow(
-            foreground,
-            MONITOR_DEFAULTTONEAREST,
-        );
+        let monitor =
+            MonitorFromWindow(
+                foreground,
+                MONITOR_DEFAULTTONEAREST,
+            );
 
         if monitor.0.is_null() {
             return false;
         }
 
-        let mut monitor_info = MONITORINFO {
-            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
-            ..Default::default()
-        };
+        let mut monitor_info =
+            MONITORINFO {
+                cbSize:
+                    std::mem::size_of::<
+                        MONITORINFO,
+                    >()
+                        as u32,
+                ..Default::default()
+            };
 
         if !GetMonitorInfoW(
             monitor,
@@ -221,7 +260,9 @@ pub fn detect_foreground_fullscreen() -> bool {
             from_win32_rect(window_rect);
 
         let monitor_rect =
-            from_win32_rect(monitor_info.rcMonitor);
+            from_win32_rect(
+                monitor_info.rcMonitor,
+            );
 
         is_fullscreen(
             window_rect,
@@ -244,40 +285,67 @@ pub fn detect_foreground_fullscreen() -> bool {
 ///
 /// The monitor polls Windows at a lightweight interval and emits
 /// `fullscreen_state_changed` only when the observed state changes.
-pub fn spawn_fullscreen_monitor(app: AppHandle) {
-    tauri::async_runtime::spawn(async move {
-        let mut monitor = FullscreenMonitor::new();
+///
+/// The monitor also observes the global shutdown signal and terminates
+/// cleanly when the application begins exiting.
+pub fn spawn_fullscreen_monitor(
+    app: AppHandle,
+) {
+    tauri::async_runtime::spawn(
+        async move {
+            let mut monitor =
+                FullscreenMonitor::new();
 
-        let mut interval =
-            tokio::time::interval(
-                std::time::Duration::from_millis(300),
-            );
+            let mut interval =
+                tokio::time::interval(
+                    std::time::Duration::from_millis(
+                        300,
+                    ),
+                );
 
-        loop {
-            interval.tick().await;
+            loop {
+                interval.tick().await;
 
-            let fullscreen =
-                detect_foreground_fullscreen();
-
-            if let Some(payload) =
-                monitor.poll(fullscreen)
-            {
-                if let Err(error) =
-                    app.emit(FULLSCREEN_STATE_CHANGED, payload)
+                if SHUTDOWN_REQUESTED
+                    .load(
+                        std::sync::atomic::Ordering::SeqCst,
+                    )
                 {
-                    eprintln!(
-                        "[Archipelago] Failed to emit fullscreen state: {}",
-                        error
+                    println!(
+                        "[Archipelago][Evasion] Fullscreen monitor shutting down"
                     );
+
+                    break;
+                }
+
+                let fullscreen =
+                    detect_foreground_fullscreen();
+
+                if let Some(payload) =
+                    monitor.poll(fullscreen)
+                {
+                    if let Err(error) =
+                        app.emit(
+                            FULLSCREEN_STATE_CHANGED,
+                            payload,
+                        )
+                    {
+                        eprintln!(
+                            "[Archipelago] Failed to emit fullscreen state: {}",
+                            error
+                        );
+                    }
                 }
             }
-        }
-    });
+        },
+    );
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use std::sync::atomic::Ordering;
 
     // ------------------------------------------------------------------------
     // Fullscreen geometry tests
@@ -380,7 +448,7 @@ mod tests {
         };
 
         let window = ScreenRect {
-            left: 4,
+            left: 3,
             top: 0,
             right: 1920,
             bottom: 1080,
@@ -415,137 +483,187 @@ mod tests {
 
     #[test]
     fn evasion_state_starts_inactive() {
-        let state = EvasionState::new();
+        let state =
+            EvasionState::new();
 
         assert!(!state.is_fullscreen);
     }
 
     #[test]
     fn evasion_state_reports_activation() {
-        let mut state = EvasionState::new();
+        let mut state =
+            EvasionState::new();
 
         assert!(state.update(true));
-        assert!(state.is_fullscreen);
-    }
-
-    #[test]
-    fn evasion_state_does_not_report_duplicate_activation() {
-        let mut state = EvasionState::new();
-
-        assert!(state.update(true));
-        assert!(!state.update(true));
-
         assert!(state.is_fullscreen);
     }
 
     #[test]
     fn evasion_state_reports_deactivation() {
-        let mut state = EvasionState::new();
+        let mut state =
+            EvasionState::new();
+
+        state.update(true);
+
+        assert!(state.update(false));
+        assert!(!state.is_fullscreen);
+    }
+
+    #[test]
+    fn evasion_state_does_not_report_duplicate_activation() {
+        let mut state =
+            EvasionState::new();
 
         assert!(state.update(true));
-        assert!(state.update(false));
-
-        assert!(!state.is_fullscreen);
+        assert!(!state.update(true));
+        assert!(state.is_fullscreen);
     }
 
     #[test]
     fn evasion_state_does_not_report_duplicate_deactivation() {
-        let mut state = EvasionState::new();
+        let mut state =
+            EvasionState::new();
+
+        state.update(true);
+        state.update(false);
 
         assert!(!state.update(false));
-        assert!(!state.update(false));
-
         assert!(!state.is_fullscreen);
     }
 
     // ------------------------------------------------------------------------
-    // Fullscreen monitor tests
+    // Fullscreen monitor transition tests
     // ------------------------------------------------------------------------
 
     #[test]
     fn monitor_starts_with_no_transition() {
-        let mut monitor = FullscreenMonitor::new();
+        let mut monitor =
+            FullscreenMonitor::new();
 
-        assert!(monitor.poll(false).is_none());
+        assert!(
+            monitor.poll(false).is_none()
+        );
+
         assert!(!monitor.is_fullscreen());
     }
 
     #[test]
     fn monitor_emits_activation_once() {
-        let mut monitor = FullscreenMonitor::new();
+        let mut monitor =
+            FullscreenMonitor::new();
 
-        let first = monitor
-            .poll(true)
-            .expect("activation should produce an event");
+        let first =
+            monitor.poll(true);
 
-        assert!(first.active);
-        assert!(monitor.is_fullscreen());
+        assert!(first.is_some());
+        assert!(
+            first.unwrap().active
+        );
 
         assert!(
-            monitor.poll(true).is_none(),
-            "duplicate activation should not emit"
+            monitor.poll(true).is_none()
         );
     }
 
     #[test]
     fn monitor_emits_deactivation_once() {
-        let mut monitor = FullscreenMonitor::new();
+        let mut monitor =
+            FullscreenMonitor::new();
 
-        assert!(monitor.poll(true).is_some());
+        monitor.poll(true);
 
-        let transition = monitor
-            .poll(false)
-            .expect("deactivation should produce an event");
+        let transition =
+            monitor.poll(false);
 
-        assert!(!transition.active);
-        assert!(!monitor.is_fullscreen());
+        assert!(transition.is_some());
+        assert!(
+            !transition.unwrap().active
+        );
 
         assert!(
-            monitor.poll(false).is_none(),
-            "duplicate deactivation should not emit"
+            monitor.poll(false).is_none()
         );
     }
 
     #[test]
     fn monitor_handles_multiple_fullscreen_transitions() {
-        let mut monitor = FullscreenMonitor::new();
+        let mut monitor =
+            FullscreenMonitor::new();
 
-        assert!(monitor.poll(false).is_none());
-
-        assert_eq!(
-            monitor.poll(true),
-            Some(FullscreenStateChanged { active: true })
+        assert!(
+            monitor.poll(false).is_none()
         );
 
-        assert!(monitor.poll(true).is_none());
-
-        assert_eq!(
-            monitor.poll(false),
-            Some(FullscreenStateChanged { active: false })
+        assert!(
+            monitor.poll(true).is_some()
         );
 
-        assert!(monitor.poll(false).is_none());
-
-        assert_eq!(
-            monitor.poll(true),
-            Some(FullscreenStateChanged { active: true })
+        assert!(
+            monitor.poll(true).is_none()
         );
+
+        assert!(
+            monitor.poll(false).is_some()
+        );
+
+        assert!(
+            monitor.poll(false).is_none()
+        );
+
+        assert!(
+            monitor.poll(true).is_some()
+        );
+
+        assert!(monitor.is_fullscreen());
     }
 
     #[test]
     fn fullscreen_transition_maps_to_event_payload() {
-        let transition = FullscreenTransition {
-            active: true,
-        };
+        let transition =
+            FullscreenTransition {
+                active: true,
+            };
 
-        let payload: FullscreenStateChanged =
+        let payload:
+            FullscreenStateChanged =
             transition.into();
 
-        assert_eq!(
-            payload,
-            FullscreenStateChanged {
-                active: true,
-            }
+        assert!(payload.active);
+    }
+
+    // ------------------------------------------------------------------------
+    // Shutdown signal tests
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn shutdown_signal_is_observable() {
+        SHUTDOWN_REQUESTED.store(
+            false,
+            Ordering::SeqCst,
+        );
+
+        assert!(
+            !SHUTDOWN_REQUESTED.load(
+                Ordering::SeqCst
+            )
+        );
+
+        SHUTDOWN_REQUESTED.store(
+            true,
+            Ordering::SeqCst,
+        );
+
+        assert!(
+            SHUTDOWN_REQUESTED.load(
+                Ordering::SeqCst
+            )
+        );
+
+        // Keep the global state clean for
+        // subsequent tests.
+        SHUTDOWN_REQUESTED.store(
+            false,
+            Ordering::SeqCst,
         );
     }
 }

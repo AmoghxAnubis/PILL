@@ -1,5 +1,12 @@
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
+use std::sync::atomic::{AtomicBool, Ordering};
+use tauri::{
+    AppHandle,
+    Emitter,
+    Manager,
+    RunEvent,
+    WebviewWindow,
+};
 
 pub mod events;
 pub mod evasion;
@@ -8,6 +15,13 @@ pub mod media;
 pub mod telemetry;
 
 mod hwnd_controller;
+
+/// Global application shutdown signal.
+///
+/// Native background monitors use this flag to terminate cleanly when
+/// the Tauri application begins shutting down.
+pub static SHUTDOWN_REQUESTED: AtomicBool =
+    AtomicBool::new(false);
 
 /// Represents the current island UI state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -36,23 +50,32 @@ fn calculate_window_position(
     logical_width: f64,
     scale_factor: f64,
 ) -> WindowPosition {
-    let physical_width = (logical_width * scale_factor) as i32;
+    let physical_width =
+        (logical_width * scale_factor) as i32;
 
-    let x = monitor_x + (monitor_width as i32 - physical_width) / 2;
-    let y = monitor_y + (8.0 * scale_factor) as i32;
+    let x = monitor_x
+        + (monitor_width as i32 - physical_width) / 2;
+
+    let y =
+        monitor_y + (8.0 * scale_factor) as i32;
 
     WindowPosition { x, y }
 }
 
 /// Converts the frontend's string representation of an island state
 /// into the strongly typed backend representation.
-fn parse_island_state(state: &str) -> Result<IslandState, String> {
+fn parse_island_state(
+    state: &str,
+) -> Result<IslandState, String> {
     match state {
         "idle" => Ok(IslandState::Idle),
         "compact" => Ok(IslandState::Compact),
         "expanded" => Ok(IslandState::Expanded),
         "split" => Ok(IslandState::Split),
-        _ => Err(format!("Unknown island state: {}", state)),
+        _ => Err(format!(
+            "Unknown island state: {}",
+            state
+        )),
     }
 }
 
@@ -85,10 +108,12 @@ fn resize_island(
         .map_err(|e| e.to_string())?;
 
     window
-        .set_position(tauri::PhysicalPosition::new(
-            position.x,
-            position.y,
-        ))
+        .set_position(
+            tauri::PhysicalPosition::new(
+                position.x,
+                position.y,
+            ),
+        )
         .map_err(|e| e.to_string())?;
 
     Ok(())
@@ -100,14 +125,20 @@ fn set_click_through(
     window: WebviewWindow,
     enabled: bool,
 ) -> Result<(), String> {
-    hwnd_controller::set_click_through(&window, enabled)
+    hwnd_controller::set_click_through(
+        &window,
+        enabled,
+    )
 }
 
 /// Notify the backend of a state change so it can adjust
 /// polling/behavior in later phases.
 #[tauri::command]
-fn notify_state_change(state: String) -> Result<(), String> {
-    let parsed_state = parse_island_state(&state)?;
+fn notify_state_change(
+    state: String,
+) -> Result<(), String> {
+    let parsed_state =
+        parse_island_state(&state)?;
 
     println!(
         "[Archipelago] State changed to: {:?}",
@@ -119,17 +150,23 @@ fn notify_state_change(state: String) -> Result<(), String> {
 
 /// Control the active Windows media session.
 #[tauri::command]
-async fn media_skip_previous() -> Result<bool, String> {
+async fn media_skip_previous()
+    -> Result<bool, String>
+{
     media::skip_previous().await
 }
 
 #[tauri::command]
-async fn media_toggle_play_pause() -> Result<bool, String> {
+async fn media_toggle_play_pause()
+    -> Result<bool, String>
+{
     media::toggle_play_pause().await
 }
 
 #[tauri::command]
-async fn media_skip_next() -> Result<bool, String> {
+async fn media_skip_next()
+    -> Result<bool, String>
+{
     media::skip_next().await
 }
 
@@ -138,12 +175,17 @@ async fn media_skip_next() -> Result<bool, String> {
 fn start_focus_timer(
     app: AppHandle,
     timer: tauri::State<'_, focus_timer::FocusTimer>,
-) -> Result<focus_timer::TimerSnapshot, String> {
+) -> Result<
+    focus_timer::TimerSnapshot,
+    String,
+> {
     let snapshot = timer.start();
 
     app.emit(events::TIMER_TICK, snapshot)
         .map_err(|error| {
-            format!("Failed to emit timer update: {error}")
+            format!(
+                "Failed to emit timer update: {error}"
+            )
         })?;
 
     Ok(snapshot)
@@ -154,12 +196,17 @@ fn start_focus_timer(
 fn pause_focus_timer(
     app: AppHandle,
     timer: tauri::State<'_, focus_timer::FocusTimer>,
-) -> Result<focus_timer::TimerSnapshot, String> {
+) -> Result<
+    focus_timer::TimerSnapshot,
+    String,
+> {
     let snapshot = timer.pause();
 
     app.emit(events::TIMER_TICK, snapshot)
         .map_err(|error| {
-            format!("Failed to emit timer update: {error}")
+            format!(
+                "Failed to emit timer update: {error}"
+            )
         })?;
 
     Ok(snapshot)
@@ -170,12 +217,17 @@ fn pause_focus_timer(
 fn reset_focus_timer(
     app: AppHandle,
     timer: tauri::State<'_, focus_timer::FocusTimer>,
-) -> Result<focus_timer::TimerSnapshot, String> {
+) -> Result<
+    focus_timer::TimerSnapshot,
+    String,
+> {
     let snapshot = timer.reset();
 
     app.emit(events::TIMER_TICK, snapshot)
         .map_err(|error| {
-            format!("Failed to emit timer update: {error}")
+            format!(
+                "Failed to emit timer update: {error}"
+            )
         })?;
 
     Ok(snapshot)
@@ -183,16 +235,21 @@ fn reset_focus_timer(
 
 /// Position the island at the top-center of the monitor
 /// where the window currently resides.
-fn position_island_on_startup(app: &AppHandle) {
+fn position_island_on_startup(
+    app: &AppHandle,
+) {
     let window = app
         .get_webview_window("island")
         .expect("island window not found");
 
-    if let Ok(Some(monitor)) = window.current_monitor() {
-        let _ = hwnd_controller::set_click_through(
-            &window,
-            false,
-        );
+    if let Ok(Some(monitor)) =
+        window.current_monitor()
+    {
+        let _ =
+            hwnd_controller::set_click_through(
+                &window,
+                false,
+            );
 
         let monitor_size = monitor.size();
         let monitor_position = monitor.position();
@@ -202,45 +259,65 @@ fn position_island_on_startup(app: &AppHandle) {
         let idle_width = 110.0;
         let idle_height = 32.0;
 
-        let position = calculate_window_position(
-            monitor_position.x,
-            monitor_position.y,
-            monitor_size.width,
-            idle_width,
-            scale_factor,
+        let position =
+            calculate_window_position(
+                monitor_position.x,
+                monitor_position.y,
+                monitor_size.width,
+                idle_width,
+                scale_factor,
+            );
+
+        let _ = window.set_size(
+            tauri::LogicalSize::new(
+                idle_width,
+                idle_height,
+            ),
         );
 
-        let _ = window.set_size(tauri::LogicalSize::new(
-            idle_width,
-            idle_height,
-        ));
-
-        let _ = window.set_position(tauri::PhysicalPosition::new(
-            position.x,
-            position.y,
-        ));
+        let _ = window.set_position(
+            tauri::PhysicalPosition::new(
+                position.x,
+                position.y,
+            ),
+        );
     }
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
+#[cfg_attr(
+    mobile,
+    tauri::mobile_entry_point
+)]
 pub fn run() {
+    // Always begin a new application run with a clear
+    // shutdown state.
+    SHUTDOWN_REQUESTED.store(
+        false,
+        Ordering::SeqCst,
+    );
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![
-            resize_island,
-            set_click_through,
-            notify_state_change,
-            media_skip_previous,
-            media_toggle_play_pause,
-            media_skip_next,
-            start_focus_timer,
-            pause_focus_timer,
-            reset_focus_timer,
-        ])
+        .invoke_handler(
+            tauri::generate_handler![
+                resize_island,
+                set_click_through,
+                notify_state_change,
+                media_skip_previous,
+                media_toggle_play_pause,
+                media_skip_next,
+                start_focus_timer,
+                pause_focus_timer,
+                reset_focus_timer,
+            ],
+        )
         .setup(|app| {
-            position_island_on_startup(app.handle());
+            position_island_on_startup(
+                app.handle(),
+            );
 
-            let focus_timer = focus_timer::FocusTimer::new();
+            let focus_timer =
+                focus_timer::FocusTimer::new();
 
             app.manage(focus_timer.clone());
 
@@ -263,8 +340,35 @@ pub fn run() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(
+            tauri::generate_context!(),
+        )
+        .expect(
+            "error while building tauri application",
+        )
+        .run(|_app_handle, event| {
+            match event {
+                RunEvent::ExitRequested { .. } => {
+                    println!(
+                        "[Archipelago] Shutdown requested"
+                    );
+
+                    SHUTDOWN_REQUESTED.store(
+                        true,
+                        Ordering::SeqCst,
+                    );
+                }
+
+                RunEvent::Exit => {
+                    SHUTDOWN_REQUESTED.store(
+                        true,
+                        Ordering::SeqCst,
+                    );
+                }
+
+                _ => {}
+            }
+        });
 }
 
 #[cfg(test)]
@@ -296,7 +400,8 @@ mod tests {
 
     #[test]
     fn rejects_unknown_island_state() {
-        let result = parse_island_state("unknown");
+        let result =
+            parse_island_state("unknown");
 
         assert!(result.is_err());
 
@@ -308,13 +413,14 @@ mod tests {
 
     #[test]
     fn calculates_centered_position_on_standard_display() {
-        let position = calculate_window_position(
-            0,
-            0,
-            1920,
-            110.0,
-            1.0,
-        );
+        let position =
+            calculate_window_position(
+                0,
+                0,
+                1920,
+                110.0,
+                1.0,
+            );
 
         assert_eq!(
             position,
@@ -327,13 +433,14 @@ mod tests {
 
     #[test]
     fn calculates_position_with_display_offset_and_scaling() {
-        let position = calculate_window_position(
-            100,
-            50,
-            2560,
-            220.0,
-            1.5,
-        );
+        let position =
+            calculate_window_position(
+                100,
+                50,
+                2560,
+                220.0,
+                1.5,
+            );
 
         assert_eq!(
             position,
@@ -346,13 +453,14 @@ mod tests {
 
     #[test]
     fn handles_zero_width_monitor_without_panicking() {
-        let position = calculate_window_position(
-            100,
-            50,
-            0,
-            110.0,
-            1.0,
-        );
+        let position =
+            calculate_window_position(
+                100,
+                50,
+                0,
+                110.0,
+                1.0,
+            );
 
         assert_eq!(
             position,
@@ -360,6 +468,46 @@ mod tests {
                 x: 45,
                 y: 58,
             }
+        );
+    }
+
+    #[test]
+    fn shutdown_signal_starts_clear() {
+        SHUTDOWN_REQUESTED.store(
+            false,
+            Ordering::SeqCst,
+        );
+
+        assert!(
+            !SHUTDOWN_REQUESTED.load(
+                Ordering::SeqCst
+            )
+        );
+    }
+
+    #[test]
+    fn shutdown_signal_can_be_requested() {
+        SHUTDOWN_REQUESTED.store(
+            false,
+            Ordering::SeqCst,
+        );
+
+        SHUTDOWN_REQUESTED.store(
+            true,
+            Ordering::SeqCst,
+        );
+
+        assert!(
+            SHUTDOWN_REQUESTED.load(
+                Ordering::SeqCst
+            )
+        );
+
+        // Leave the test process in the normal
+        // non-shutdown state for other tests.
+        SHUTDOWN_REQUESTED.store(
+            false,
+            Ordering::SeqCst,
         );
     }
 }
