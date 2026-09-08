@@ -1,5 +1,7 @@
 use crate::events::TIMER_TICK;
+use crate::SHUTDOWN_REQUESTED;
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
@@ -224,6 +226,13 @@ pub fn spawn_focus_timer_monitor(
         loop {
             interval.tick().await;
 
+            if SHUTDOWN_REQUESTED.load(Ordering::SeqCst) {
+                println!(
+                    "[Archipelago][Timer] Focus timer monitor shutting down"
+                );
+                break;
+            }
+
             if let Some(snapshot) = timer.tick() {
                 emit_snapshot(&app, snapshot);
 
@@ -379,5 +388,18 @@ mod tests {
 
         assert_eq!(snapshot.seconds_remaining, 5);
         assert!(snapshot.is_running);
+    }
+
+    #[test]
+    fn shutdown_signal_is_observable() {
+        SHUTDOWN_REQUESTED.store(false, Ordering::SeqCst);
+
+        assert!(!SHUTDOWN_REQUESTED.load(Ordering::SeqCst));
+
+        SHUTDOWN_REQUESTED.store(true, Ordering::SeqCst);
+
+        assert!(SHUTDOWN_REQUESTED.load(Ordering::SeqCst));
+
+        SHUTDOWN_REQUESTED.store(false, Ordering::SeqCst);
     }
 }
