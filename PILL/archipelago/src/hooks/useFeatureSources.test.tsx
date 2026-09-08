@@ -14,6 +14,7 @@ import {
 import { useFeatureSources } from './useFeatureSources';
 import { useMediaSource } from './useMediaSource';
 import { useFocusTimerSource } from './useFocusTimerSource';
+import { useTelemetrySource } from './useTelemetrySource';
 
 vi.mock('./useMediaSource', () => ({
   useMediaSource: vi.fn(),
@@ -23,11 +24,18 @@ vi.mock('./useFocusTimerSource', () => ({
   useFocusTimerSource: vi.fn(),
 }));
 
+vi.mock('./useTelemetrySource', () => ({
+  useTelemetrySource: vi.fn(),
+}));
+
 const mockedUseMediaSource =
   vi.mocked(useMediaSource);
 
 const mockedUseFocusTimerSource =
   vi.mocked(useFocusTimerSource);
+
+const mockedUseTelemetrySource =
+  vi.mocked(useTelemetrySource);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -54,6 +62,14 @@ describe('useFeatureSources', () => {
     ).toHaveBeenCalledTimes(1);
   });
 
+  it('mounts the telemetry feature source', () => {
+    renderHook(() => useFeatureSources());
+
+    expect(
+      mockedUseTelemetrySource,
+    ).toHaveBeenCalledTimes(1);
+  });
+
   it('mounts all feature sources together', () => {
     renderHook(() => useFeatureSources());
 
@@ -63,6 +79,10 @@ describe('useFeatureSources', () => {
 
     expect(
       mockedUseFocusTimerSource,
+    ).toHaveBeenCalledTimes(1);
+
+    expect(
+      mockedUseTelemetrySource,
     ).toHaveBeenCalledTimes(1);
   });
 });
