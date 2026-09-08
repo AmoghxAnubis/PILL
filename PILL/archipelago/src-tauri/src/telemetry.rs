@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::Ordering;
 use sysinfo::System;
 use tauri::{AppHandle, Emitter};
 
 use crate::events::TELEMETRY_UPDATE;
+use crate::SHUTDOWN_REQUESTED;
 
 const TELEMETRY_POLL_INTERVAL: std::time::Duration =
     std::time::Duration::from_secs(2);
@@ -59,6 +61,10 @@ pub fn is_ram_warning(
 
 pub fn spawn_telemetry_monitor(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
+        println!(
+            "[Archipelago][Telemetry] Telemetry monitor started"
+        );
+
         let mut system = System::new();
 
         system.refresh_memory();
@@ -73,6 +79,14 @@ pub fn spawn_telemetry_monitor(app: AppHandle) {
 
         loop {
             interval.tick().await;
+
+            if SHUTDOWN_REQUESTED.load(Ordering::SeqCst) {
+                println!(
+                    "[Archipelago][Telemetry] Telemetry monitor shutting down"
+                );
+
+                break;
+            }
 
             system.refresh_cpu_usage();
             system.refresh_memory();
@@ -151,5 +165,36 @@ mod tests {
             85.0,
             thresholds
         ));
+    }
+
+    #[test]
+    fn shutdown_signal_is_observable() {
+        SHUTDOWN_REQUESTED.store(
+            false,
+            Ordering::SeqCst,
+        );
+
+        assert!(
+            !SHUTDOWN_REQUESTED.load(
+                Ordering::SeqCst
+            )
+        );
+
+        SHUTDOWN_REQUESTED.store(
+            true,
+            Ordering::SeqCst,
+        );
+
+        assert!(
+            SHUTDOWN_REQUESTED.load(
+                Ordering::SeqCst
+            )
+        );
+
+        // Keep global state clean for the remaining tests.
+        SHUTDOWN_REQUESTED.store(
+            false,
+            Ordering::SeqCst,
+        );
     }
 }
