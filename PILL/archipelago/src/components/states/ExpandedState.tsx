@@ -92,7 +92,6 @@ export function ExpandedState({
   const hasOrchestratedWidgets =
     orchestration.layout !== 'none';
 
-
   const focusTimerSelected =
     hasOrchestratedWidgets
       ? orchestration.primary === 'focusTimer'
@@ -129,6 +128,13 @@ export function ExpandedState({
     } else {
       void start();
     }
+  };
+
+  const handleStartFocus = (
+    event: MouseEvent<HTMLButtonElement>,
+  ) => {
+    event.stopPropagation();
+    void start();
   };
 
   const handleFocusReset = (
@@ -194,19 +200,32 @@ export function ExpandedState({
               : 'Archipelago'}
         </span>
 
-        <button
-          className="state-expanded__close"
-          onClick={(
-            event: MouseEvent<HTMLButtonElement>,
-          ) => {
-            event.stopPropagation();
-            onCollapse();
-          }}
-          aria-label="Collapse island"
-          type="button"
-        >
-          ✕
-        </button>
+        <div className="state-expanded__header-actions">
+          {focusTimerStatus === 'idle' && (
+            <button
+              className="state-expanded__control state-expanded__focus-start"
+              onClick={handleStartFocus}
+              aria-label="Start focus timer"
+              type="button"
+            >
+              ▶ Focus
+            </button>
+          )}
+
+          <button
+            className="state-expanded__close"
+            onClick={(
+              event: MouseEvent<HTMLButtonElement>,
+            ) => {
+              event.stopPropagation();
+              onCollapse();
+            }}
+            aria-label="Collapse island"
+            type="button"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       {showFocusTimer ? (
@@ -243,8 +262,7 @@ export function ExpandedState({
                     100,
                     Math.max(
                       0,
-                      ((25 * 60 -
-                        secondsRemaining) /
+                      ((25 * 60 - secondsRemaining) /
                         (25 * 60)) *
                         100,
                     ),

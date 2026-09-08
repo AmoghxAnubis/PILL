@@ -52,6 +52,18 @@ impl MediaSnapshot {
             || self.duration != other.duration
             || self.artwork != other.artwork
     }
+
+    /// Returns true when the session metadata/state changed, excluding artwork.
+    ///
+    /// This is used by the polling loop so artwork is only re-read when the
+    /// actual media item or playback state changes.
+    pub fn has_metadata_changed(&self, other: &Self) -> bool {
+        self.app_id != other.app_id
+            || self.title != other.title
+            || self.artist != other.artist
+            || self.is_playing != other.is_playing
+            || self.duration != other.duration
+    }
 }
 
 #[cfg(target_os = "windows")]
@@ -181,19 +193,24 @@ mod windows_media {
             return None;
         }
 
-        let encoded = base64::engine::general_purpose::STANDARD.encode(bytes);
+        let encoded =
+            base64::engine::general_purpose::STANDARD.encode(bytes);
 
         Some(format!("data:image/jpeg;base64,{encoded}"))
     }
 
     /// Reads the active Windows media session.
     ///
-    /// Artwork is deliberately fetched separately from the main async
-    /// session polling path so WinRT stream objects never cross an `.await`
-    /// boundary in the Tauri task.
-    pub async fn read_current_session() -> Option<MediaSnapshot> {
+    /// `cached_artwork` is reused when `refresh_artwork` is false. This avoids
+    /// repeatedly reading and base64-encoding the same artwork during normal
+    /// playback polling.
+    async fn read_current_session_internal(
+        cached_artwork: Option<String>,
+        refresh_artwork: bool,
+    ) -> Option<MediaSnapshot> {
         let operation =
-            GlobalSystemMediaTransportControlsSessionManager::RequestAsync().ok()?;
+            GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+                .ok()?;
 
         let manager = match operation.await {
             Ok(manager) => manager,
@@ -217,16 +234,17 @@ mod windows_media {
             }
         };
 
-        let properties_operation = match session.TryGetMediaPropertiesAsync() {
-            Ok(operation) => operation,
-            Err(error) => {
-                eprintln!(
-                    "[Archipelago][Media] TryGetMediaPropertiesAsync failed: {}",
-                    error
-                );
-                return None;
-            }
-        };
+        let properties_operation =
+            match session.TryGetMediaPropertiesAsync() {
+                Ok(operation) => operation,
+                Err(error) => {
+                    eprintln!(
+                        "[Archipelago][Media] TryGetMediaPropertiesAsync failed: {}",
+                        error
+                    );
+                    return None;
+                }
+            };
 
         let properties = match properties_operation.await {
             Ok(properties) => properties,
@@ -261,9 +279,15 @@ mod windows_media {
             }
         };
 
-        let title = properties.Title().unwrap_or_default().to_string();
+        let title = properties
+            .Title()
+            .unwrap_or_default()
+            .to_string();
 
-        let artist = properties.Artist().unwrap_or_default().to_string();
+        let artist = properties
+            .Artist()
+            .unwrap_or_default()
+            .to_string();
 
         let is_playing = playback
             .PlaybackStatus()
@@ -289,11 +313,15 @@ mod windows_media {
             .map(|value| value.to_string())
             .unwrap_or_default();
 
-        let thumbnail = properties.Thumbnail().ok();
+        let artwork = if refresh_artwork {
+            let thumbnail = properties.Thumbnail().ok();
 
-        // Do not hold the WinRT thumbnail reference across an async boundary.
-        // The thumbnail itself is read synchronously here.
-        let artwork = read_thumbnail(thumbnail);
+            // Do not hold the WinRT thumbnail reference across an async
+            // boundary. The thumbnail itself is read synchronously here.
+            read_thumbnail(thumbnail)
+        } else {
+            cached_artwork
+        };
 
         Some(MediaSnapshot {
             app_id,
@@ -306,20 +334,31 @@ mod windows_media {
         })
     }
 
+    /// Reads the active Windows media session with artwork.
+    pub async fn read_current_session() -> Option<MediaSnapshot> {
+        read_current_session_internal(None, true).await
+    }
+
     pub async fn skip_previous() -> Result<bool, String> {
         let manager =
             GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
                 .map_err(|error| format!("RequestAsync failed: {error}"))?
                 .await
-                .map_err(|error| format!("RequestAsync await failed: {error}"))?;
+                .map_err(|error| {
+                    format!("RequestAsync await failed: {error}")
+                })?;
 
         let session = manager
             .GetCurrentSession()
-            .map_err(|error| format!("GetCurrentSession failed: {error}"))?;
+            .map_err(|error| {
+                format!("GetCurrentSession failed: {error}")
+            })?;
 
         session
             .TrySkipPreviousAsync()
-            .map_err(|error| format!("TrySkipPreviousAsync failed: {error}"))?
+            .map_err(|error| {
+                format!("TrySkipPreviousAsync failed: {error}")
+            })?
             .await
             .map_err(|error| {
                 format!("TrySkipPreviousAsync await failed: {error}")
@@ -331,11 +370,15 @@ mod windows_media {
             GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
                 .map_err(|error| format!("RequestAsync failed: {error}"))?
                 .await
-                .map_err(|error| format!("RequestAsync await failed: {error}"))?;
+                .map_err(|error| {
+                    format!("RequestAsync await failed: {error}")
+                })?;
 
         let session = manager
             .GetCurrentSession()
-            .map_err(|error| format!("GetCurrentSession failed: {error}"))?;
+            .map_err(|error| {
+                format!("GetCurrentSession failed: {error}")
+            })?;
 
         session
             .TryTogglePlayPauseAsync()
@@ -353,17 +396,25 @@ mod windows_media {
             GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
                 .map_err(|error| format!("RequestAsync failed: {error}"))?
                 .await
-                .map_err(|error| format!("RequestAsync await failed: {error}"))?;
+                .map_err(|error| {
+                    format!("RequestAsync await failed: {error}")
+                })?;
 
         let session = manager
             .GetCurrentSession()
-            .map_err(|error| format!("GetCurrentSession failed: {error}"))?;
+            .map_err(|error| {
+                format!("GetCurrentSession failed: {error}")
+            })?;
 
         session
             .TrySkipNextAsync()
-            .map_err(|error| format!("TrySkipNextAsync failed: {error}"))?
+            .map_err(|error| {
+                format!("TrySkipNextAsync failed: {error}")
+            })?
             .await
-            .map_err(|error| format!("TrySkipNextAsync await failed: {error}"))
+            .map_err(|error| {
+                format!("TrySkipNextAsync await failed: {error}")
+            })
     }
 
     pub fn spawn_media_monitor(app: AppHandle) {
@@ -380,12 +431,48 @@ mod windows_media {
             loop {
                 interval.tick().await;
 
-                let snapshot = read_current_session().await;
+                /*
+                 * Read normal media metadata and position first, but reuse
+                 * the previous artwork. This avoids reading and base64-encoding
+                 * artwork on every 500 ms poll.
+                 */
+                let snapshot = read_current_session_internal(
+                    last_snapshot.artwork.clone(),
+                    false,
+                )
+                .await;
 
                 match snapshot {
-                    Some(snapshot) => {
-                        if snapshot != last_snapshot {
-                            if snapshot.has_content_changed(&last_snapshot) {
+                    Some(mut snapshot) => {
+                        let metadata_changed =
+                            snapshot.has_metadata_changed(&last_snapshot);
+
+                        /*
+                         * When the actual media item changes, fetch the new
+                         * artwork once. Playback position updates continue to
+                         * flow every poll without re-reading the artwork.
+                         */
+                        if metadata_changed {
+                            if let Some(refreshed_snapshot) =
+                                read_current_session().await
+                            {
+                                snapshot = refreshed_snapshot;
+                            }
+                        }
+
+                        let position_changed =
+                            snapshot.position != last_snapshot.position;
+
+                        let content_changed =
+                            snapshot.has_content_changed(&last_snapshot);
+
+                        /*
+                         * Preserve position updates for the progress bar,
+                         * while avoiding duplicate emissions when absolutely
+                         * nothing changed.
+                         */
+                        if content_changed || position_changed {
+                            if content_changed {
                                 println!(
                                     "[Archipelago][Media] Session: app_id='{}', title='{}', artist='{}', playing={}",
                                     snapshot.app_id,
@@ -410,14 +497,18 @@ mod windows_media {
 
                     None => {
                         if !last_snapshot.is_empty() {
-                            let empty_snapshot = MediaSnapshot::default();
+                            let empty_snapshot =
+                                MediaSnapshot::default();
 
                             println!(
                                 "[Archipelago][Media] No active media session"
                             );
 
                             if let Err(error) =
-                                app.emit(MEDIA_UPDATE, empty_snapshot.clone())
+                                app.emit(
+                                    MEDIA_UPDATE,
+                                    empty_snapshot.clone(),
+                                )
                             {
                                 eprintln!(
                                     "[Archipelago][Media] Failed to emit empty media update: {}",
@@ -547,6 +638,66 @@ mod tests {
     }
 
     #[test]
+    fn position_only_change_is_not_metadata_change() {
+        let original = MediaSnapshot {
+            app_id: "Spotify.exe".to_string(),
+            title: "Test Song".to_string(),
+            artist: "Test Artist".to_string(),
+            is_playing: true,
+            duration: 240.0,
+            position: 30.0,
+            artwork: None,
+        };
+
+        let updated = MediaSnapshot {
+            position: 31.0,
+            ..original.clone()
+        };
+
+        assert!(!updated.has_metadata_changed(&original));
+    }
+
+    #[test]
+    fn artwork_change_is_content_change() {
+        let original = MediaSnapshot {
+            app_id: "Spotify.exe".to_string(),
+            title: "Test Song".to_string(),
+            artist: "Test Artist".to_string(),
+            is_playing: true,
+            duration: 240.0,
+            position: 30.0,
+            artwork: Some("artwork-a".to_string()),
+        };
+
+        let updated = MediaSnapshot {
+            artwork: Some("artwork-b".to_string()),
+            ..original.clone()
+        };
+
+        assert!(updated.has_content_changed(&original));
+    }
+
+    #[test]
+    fn artwork_change_is_not_metadata_change() {
+        let original = MediaSnapshot {
+            app_id: "Spotify.exe".to_string(),
+            title: "Test Song".to_string(),
+            artist: "Test Artist".to_string(),
+            is_playing: true,
+            duration: 240.0,
+            position: 30.0,
+            artwork: Some("artwork-a".to_string()),
+        };
+
+        let updated = MediaSnapshot {
+            artwork: Some("artwork-b".to_string()),
+            ..original.clone()
+        };
+
+        assert!(!updated.has_metadata_changed(&original));
+    }
+
+    #[test]
     fn track_change_is_content_change() {
         let original = MediaSnapshot {
             app_id: "Spotify.exe".to_string(),
@@ -564,6 +715,7 @@ mod tests {
         };
 
         assert!(updated.has_content_changed(&original));
+        assert!(updated.has_metadata_changed(&original));
     }
 
     #[test]
@@ -584,5 +736,6 @@ mod tests {
         };
 
         assert!(updated.has_content_changed(&original));
+        assert!(updated.has_metadata_changed(&original));
     }
 }

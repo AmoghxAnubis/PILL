@@ -104,19 +104,49 @@ body,
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+  gap: 10px;
   margin-bottom: 8px;
 }
 
 .state-expanded__title {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 13px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.92);
   letter-spacing: 0.02em;
 }
 
+.state-expanded__header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.state-expanded__focus-start {
+  min-width: 72px;
+  width: auto;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .state-expanded__close {
   width: 20px;
   height: 20px;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -126,7 +156,9 @@ body,
   border-radius: 50%;
   font-size: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .state-expanded__close:hover {
@@ -483,13 +515,6 @@ body,
   justify-content: center;
   color: rgba(255, 255, 255, 0.45);
   font-size: 16px;
-}
-
-.state-expanded__media-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
 }
 
 /* ---- Focus Timer ---- */
