@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 
 pub const DEFAULT_FOCUS_DURATION_SECS: u64 = 25 * 60;
-pub const TIMER_POLL_INTERVAL: Duration = Duration::from_millis(100);
+pub const TIMER_POLL_INTERVAL: Duration = Duration::from_millis(250);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TimerSnapshot {
