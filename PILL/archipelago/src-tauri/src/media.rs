@@ -1,5 +1,7 @@
 use crate::events::MEDIA_UPDATE;
+use crate::SHUTDOWN_REQUESTED;
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
@@ -419,33 +421,51 @@ mod windows_media {
 
     pub fn spawn_media_monitor(app: AppHandle) {
         tauri::async_runtime::spawn(async move {
-            println!("[Archipelago][Media] Media monitor started");
+            println!(
+                "[Archipelago][Media] Media monitor started"
+            );
 
-            let mut last_snapshot = MediaSnapshot::default();
+            let mut last_snapshot =
+                MediaSnapshot::default();
 
             let mut interval =
-                tokio::time::interval(Duration::from_millis(500));
+                tokio::time::interval(
+                    Duration::from_millis(500),
+                );
 
             interval.tick().await;
 
             loop {
                 interval.tick().await;
 
+                if SHUTDOWN_REQUESTED.load(
+                    Ordering::SeqCst,
+                ) {
+                    println!(
+                        "[Archipelago][Media] Media monitor shutting down"
+                    );
+
+                    break;
+                }
+
                 /*
                  * Read normal media metadata and position first, but reuse
                  * the previous artwork. This avoids reading and base64-encoding
                  * artwork on every 500 ms poll.
                  */
-                let snapshot = read_current_session_internal(
-                    last_snapshot.artwork.clone(),
-                    false,
-                )
-                .await;
+                let snapshot =
+                    read_current_session_internal(
+                        last_snapshot.artwork.clone(),
+                        false,
+                    )
+                    .await;
 
                 match snapshot {
                     Some(mut snapshot) => {
                         let metadata_changed =
-                            snapshot.has_metadata_changed(&last_snapshot);
+                            snapshot.has_metadata_changed(
+                                &last_snapshot,
+                            );
 
                         /*
                          * When the actual media item changes, fetch the new
@@ -453,25 +473,32 @@ mod windows_media {
                          * flow every poll without re-reading the artwork.
                          */
                         if metadata_changed {
-                            if let Some(refreshed_snapshot) =
-                                read_current_session().await
+                            if let Some(
+                                refreshed_snapshot,
+                            ) = read_current_session().await
                             {
-                                snapshot = refreshed_snapshot;
+                                snapshot =
+                                    refreshed_snapshot;
                             }
                         }
 
                         let position_changed =
-                            snapshot.position != last_snapshot.position;
+                            snapshot.position
+                                != last_snapshot.position;
 
                         let content_changed =
-                            snapshot.has_content_changed(&last_snapshot);
+                            snapshot.has_content_changed(
+                                &last_snapshot,
+                            );
 
                         /*
                          * Preserve position updates for the progress bar,
                          * while avoiding duplicate emissions when absolutely
                          * nothing changed.
                          */
-                        if content_changed || position_changed {
+                        if content_changed
+                            || position_changed
+                        {
                             if content_changed {
                                 println!(
                                     "[Archipelago][Media] Session: app_id='{}', title='{}', artist='{}', playing={}",
@@ -483,7 +510,10 @@ mod windows_media {
                             }
 
                             if let Err(error) =
-                                app.emit(MEDIA_UPDATE, snapshot.clone())
+                                app.emit(
+                                    MEDIA_UPDATE,
+                                    snapshot.clone(),
+                                )
                             {
                                 eprintln!(
                                     "[Archipelago][Media] Failed to emit media update: {}",
@@ -491,12 +521,14 @@ mod windows_media {
                                 );
                             }
 
-                            last_snapshot = snapshot;
+                            last_snapshot =
+                                snapshot;
                         }
                     }
 
                     None => {
-                        if !last_snapshot.is_empty() {
+                        if !last_snapshot.is_empty()
+                        {
                             let empty_snapshot =
                                 MediaSnapshot::default();
 
@@ -516,7 +548,8 @@ mod windows_media {
                                 );
                             }
 
-                            last_snapshot = empty_snapshot;
+                            last_snapshot =
+                                empty_snapshot;
                         }
                     }
                 }
@@ -529,38 +562,63 @@ mod windows_media {
 mod windows_media {
     use super::*;
 
-    pub fn spawn_media_monitor(_app: AppHandle) {
+    pub fn spawn_media_monitor(
+        _app: AppHandle,
+    ) {
         println!(
             "[Archipelago][Media] Media integration is only available on Windows"
         );
     }
 
-    pub async fn skip_previous() -> Result<bool, String> {
-        Err("Media controls are only available on Windows".to_string())
+    pub async fn skip_previous()
+        -> Result<bool, String>
+    {
+        Err(
+            "Media controls are only available on Windows"
+                .to_string(),
+        )
     }
 
-    pub async fn toggle_play_pause() -> Result<bool, String> {
-        Err("Media controls are only available on Windows".to_string())
+    pub async fn toggle_play_pause()
+        -> Result<bool, String>
+    {
+        Err(
+            "Media controls are only available on Windows"
+                .to_string(),
+        )
     }
 
-    pub async fn skip_next() -> Result<bool, String> {
-        Err("Media controls are only available on Windows".to_string())
+    pub async fn skip_next()
+        -> Result<bool, String>
+    {
+        Err(
+            "Media controls are only available on Windows"
+                .to_string(),
+        )
     }
 }
 
-pub fn spawn_media_monitor(app: AppHandle) {
+pub fn spawn_media_monitor(
+    app: AppHandle,
+) {
     windows_media::spawn_media_monitor(app);
 }
 
-pub async fn skip_previous() -> Result<bool, String> {
+pub async fn skip_previous()
+    -> Result<bool, String>
+{
     windows_media::skip_previous().await
 }
 
-pub async fn toggle_play_pause() -> Result<bool, String> {
+pub async fn toggle_play_pause()
+    -> Result<bool, String>
+{
     windows_media::toggle_play_pause().await
 }
 
-pub async fn skip_next() -> Result<bool, String> {
+pub async fn skip_next()
+    -> Result<bool, String>
+{
     windows_media::skip_next().await
 }
 
@@ -568,174 +626,310 @@ pub async fn skip_next() -> Result<bool, String> {
 mod tests {
     use super::*;
 
+    use std::sync::atomic::Ordering;
+
     #[test]
     fn default_media_snapshot_is_empty() {
-        let snapshot = MediaSnapshot::default();
+        let snapshot =
+            MediaSnapshot::default();
 
         assert!(snapshot.is_empty());
         assert!(snapshot.app_id.is_empty());
         assert!(snapshot.title.is_empty());
         assert!(snapshot.artist.is_empty());
         assert!(!snapshot.is_playing);
-        assert_eq!(snapshot.duration, 0.0);
-        assert_eq!(snapshot.position, 0.0);
-        assert!(snapshot.artwork.is_none());
+        assert_eq!(
+            snapshot.duration,
+            0.0
+        );
+        assert_eq!(
+            snapshot.position,
+            0.0
+        );
+        assert!(
+            snapshot.artwork.is_none()
+        );
     }
 
     #[test]
     fn populated_media_snapshot_is_not_empty() {
-        let snapshot = MediaSnapshot {
-            app_id: "Spotify".to_string(),
-            title: "Example Track".to_string(),
-            artist: "Example Artist".to_string(),
-            is_playing: true,
-            duration: 240.0,
-            position: 12.0,
-            artwork: None,
-        };
+        let snapshot =
+            MediaSnapshot {
+                app_id: "Spotify"
+                    .to_string(),
+                title: "Example Track"
+                    .to_string(),
+                artist: "Example Artist"
+                    .to_string(),
+                is_playing: true,
+                duration: 240.0,
+                position: 12.0,
+                artwork: None,
+            };
 
         assert!(!snapshot.is_empty());
     }
 
     #[test]
     fn media_snapshot_preserves_values() {
-        let snapshot = MediaSnapshot {
-            app_id: "Spotify".to_string(),
-            title: "Example Track".to_string(),
-            artist: "Example Artist".to_string(),
-            is_playing: true,
-            duration: 245.5,
-            position: 42.25,
-            artwork: None,
-        };
+        let snapshot =
+            MediaSnapshot {
+                app_id: "Spotify"
+                    .to_string(),
+                title: "Example Track"
+                    .to_string(),
+                artist: "Example Artist"
+                    .to_string(),
+                is_playing: true,
+                duration: 245.5,
+                position: 42.25,
+                artwork: None,
+            };
 
-        assert_eq!(snapshot.app_id, "Spotify");
-        assert_eq!(snapshot.title, "Example Track");
-        assert_eq!(snapshot.artist, "Example Artist");
+        assert_eq!(
+            snapshot.app_id,
+            "Spotify"
+        );
+        assert_eq!(
+            snapshot.title,
+            "Example Track"
+        );
+        assert_eq!(
+            snapshot.artist,
+            "Example Artist"
+        );
         assert!(snapshot.is_playing);
-        assert_eq!(snapshot.duration, 245.5);
-        assert_eq!(snapshot.position, 42.25);
+        assert_eq!(
+            snapshot.duration,
+            245.5
+        );
+        assert_eq!(
+            snapshot.position,
+            42.25
+        );
     }
 
     #[test]
     fn position_only_change_is_not_content_change() {
-        let original = MediaSnapshot {
-            app_id: "Spotify.exe".to_string(),
-            title: "Test Song".to_string(),
-            artist: "Test Artist".to_string(),
-            is_playing: true,
-            duration: 240.0,
-            position: 30.0,
-            artwork: None,
-        };
+        let original =
+            MediaSnapshot {
+                app_id: "Spotify.exe"
+                    .to_string(),
+                title: "Test Song"
+                    .to_string(),
+                artist: "Test Artist"
+                    .to_string(),
+                is_playing: true,
+                duration: 240.0,
+                position: 30.0,
+                artwork: None,
+            };
 
-        let updated = MediaSnapshot {
-            position: 31.0,
-            ..original.clone()
-        };
+        let updated =
+            MediaSnapshot {
+                position: 31.0,
+                ..original.clone()
+            };
 
-        assert!(!updated.has_content_changed(&original));
+        assert!(
+            !updated.has_content_changed(
+                &original
+            )
+        );
     }
 
     #[test]
     fn position_only_change_is_not_metadata_change() {
-        let original = MediaSnapshot {
-            app_id: "Spotify.exe".to_string(),
-            title: "Test Song".to_string(),
-            artist: "Test Artist".to_string(),
-            is_playing: true,
-            duration: 240.0,
-            position: 30.0,
-            artwork: None,
-        };
+        let original =
+            MediaSnapshot {
+                app_id: "Spotify.exe"
+                    .to_string(),
+                title: "Test Song"
+                    .to_string(),
+                artist: "Test Artist"
+                    .to_string(),
+                is_playing: true,
+                duration: 240.0,
+                position: 30.0,
+                artwork: None,
+            };
 
-        let updated = MediaSnapshot {
-            position: 31.0,
-            ..original.clone()
-        };
+        let updated =
+            MediaSnapshot {
+                position: 31.0,
+                ..original.clone()
+            };
 
-        assert!(!updated.has_metadata_changed(&original));
+        assert!(
+            !updated.has_metadata_changed(
+                &original
+            )
+        );
     }
 
     #[test]
     fn artwork_change_is_content_change() {
-        let original = MediaSnapshot {
-            app_id: "Spotify.exe".to_string(),
-            title: "Test Song".to_string(),
-            artist: "Test Artist".to_string(),
-            is_playing: true,
-            duration: 240.0,
-            position: 30.0,
-            artwork: Some("artwork-a".to_string()),
-        };
+        let original =
+            MediaSnapshot {
+                app_id: "Spotify.exe"
+                    .to_string(),
+                title: "Test Song"
+                    .to_string(),
+                artist: "Test Artist"
+                    .to_string(),
+                is_playing: true,
+                duration: 240.0,
+                position: 30.0,
+                artwork: Some(
+                    "artwork-a".to_string(),
+                ),
+            };
 
-        let updated = MediaSnapshot {
-            artwork: Some("artwork-b".to_string()),
-            ..original.clone()
-        };
+        let updated =
+            MediaSnapshot {
+                artwork: Some(
+                    "artwork-b".to_string(),
+                ),
+                ..original.clone()
+            };
 
-        assert!(updated.has_content_changed(&original));
+        assert!(
+            updated.has_content_changed(
+                &original
+            )
+        );
     }
 
     #[test]
     fn artwork_change_is_not_metadata_change() {
-        let original = MediaSnapshot {
-            app_id: "Spotify.exe".to_string(),
-            title: "Test Song".to_string(),
-            artist: "Test Artist".to_string(),
-            is_playing: true,
-            duration: 240.0,
-            position: 30.0,
-            artwork: Some("artwork-a".to_string()),
-        };
+        let original =
+            MediaSnapshot {
+                app_id: "Spotify.exe"
+                    .to_string(),
+                title: "Test Song"
+                    .to_string(),
+                artist: "Test Artist"
+                    .to_string(),
+                is_playing: true,
+                duration: 240.0,
+                position: 30.0,
+                artwork: Some(
+                    "artwork-a".to_string(),
+                ),
+            };
 
-        let updated = MediaSnapshot {
-            artwork: Some("artwork-b".to_string()),
-            ..original.clone()
-        };
+        let updated =
+            MediaSnapshot {
+                artwork: Some(
+                    "artwork-b".to_string(),
+                ),
+                ..original.clone()
+            };
 
-        assert!(!updated.has_metadata_changed(&original));
+        assert!(
+            !updated.has_metadata_changed(
+                &original
+            )
+        );
     }
 
     #[test]
     fn track_change_is_content_change() {
-        let original = MediaSnapshot {
-            app_id: "Spotify.exe".to_string(),
-            title: "Song One".to_string(),
-            artist: "Artist".to_string(),
-            is_playing: true,
-            duration: 240.0,
-            position: 30.0,
-            artwork: None,
-        };
+        let original =
+            MediaSnapshot {
+                app_id: "Spotify.exe"
+                    .to_string(),
+                title: "Song One"
+                    .to_string(),
+                artist: "Artist"
+                    .to_string(),
+                is_playing: true,
+                duration: 240.0,
+                position: 30.0,
+                artwork: None,
+            };
 
-        let updated = MediaSnapshot {
-            title: "Song Two".to_string(),
-            ..original.clone()
-        };
+        let updated =
+            MediaSnapshot {
+                title: "Song Two"
+                    .to_string(),
+                ..original.clone()
+            };
 
-        assert!(updated.has_content_changed(&original));
-        assert!(updated.has_metadata_changed(&original));
+        assert!(
+            updated.has_content_changed(
+                &original
+            )
+        );
+        assert!(
+            updated.has_metadata_changed(
+                &original
+            )
+        );
     }
 
     #[test]
     fn playback_state_change_is_content_change() {
-        let original = MediaSnapshot {
-            app_id: "Spotify.exe".to_string(),
-            title: "Test Song".to_string(),
-            artist: "Test Artist".to_string(),
-            is_playing: true,
-            duration: 240.0,
-            position: 30.0,
-            artwork: None,
-        };
+        let original =
+            MediaSnapshot {
+                app_id: "Spotify.exe"
+                    .to_string(),
+                title: "Test Song"
+                    .to_string(),
+                artist: "Test Artist"
+                    .to_string(),
+                is_playing: true,
+                duration: 240.0,
+                position: 30.0,
+                artwork: None,
+            };
 
-        let updated = MediaSnapshot {
-            is_playing: false,
-            ..original.clone()
-        };
+        let updated =
+            MediaSnapshot {
+                is_playing: false,
+                ..original.clone()
+            };
 
-        assert!(updated.has_content_changed(&original));
-        assert!(updated.has_metadata_changed(&original));
+        assert!(
+            updated.has_content_changed(
+                &original
+            )
+        );
+        assert!(
+            updated.has_metadata_changed(
+                &original
+            )
+        );
+    }
+
+    #[test]
+    fn shutdown_signal_is_observable() {
+        SHUTDOWN_REQUESTED.store(
+            false,
+            Ordering::SeqCst,
+        );
+
+        assert!(
+            !SHUTDOWN_REQUESTED.load(
+                Ordering::SeqCst
+            )
+        );
+
+        SHUTDOWN_REQUESTED.store(
+            true,
+            Ordering::SeqCst,
+        );
+
+        assert!(
+            SHUTDOWN_REQUESTED.load(
+                Ordering::SeqCst
+            )
+        );
+
+        // Keep global state clean for the remaining tests.
+        SHUTDOWN_REQUESTED.store(
+            false,
+            Ordering::SeqCst,
+        );
     }
 }
