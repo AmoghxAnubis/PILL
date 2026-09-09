@@ -171,7 +171,7 @@ describe('Island Component', () => {
     ).toBeInTheDocument();
   });
 
-  it('transitions to compact state on mouse enter', async () => {
+  it('transitions from idle to expanded state on mouse enter', async () => {
     render(<Island />);
 
     const island = document.querySelector(
@@ -182,7 +182,27 @@ describe('Island Component', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByTestId('compact-state'),
+        screen.getByTestId('expanded-state'),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('transitions from compact to expanded state on mouse enter', async () => {
+    useIslandStore.setState({
+      state: 'compact',
+    });
+
+    render(<Island />);
+
+    const island = document.querySelector(
+      '.island-wrapper > div',
+    ) as HTMLElement;
+
+    fireEvent.mouseEnter(island);
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('expanded-state'),
       ).toBeInTheDocument();
     });
   });

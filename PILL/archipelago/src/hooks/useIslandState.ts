@@ -180,21 +180,26 @@ export function useIslandState() {
             getCollapsedState(),
           );
         }, delayMs);
-    }, [
+    },
+    [
       getCollapsedState,
       transitionTo,
-    ]);
+    ],
+  );
 
   const handleMouseEnter = useCallback(() => {
     const currentState =
       useIslandStore.getState().state;
 
-    if (currentState === 'idle') {
-      void transitionTo('compact');
-      return;
-    }
-
-    if (currentState === 'split') {
+    /*
+     * Hovering over any collapsed presentation
+     * expands the island directly.
+     */
+    if (
+      currentState === 'idle' ||
+      currentState === 'compact' ||
+      currentState === 'split'
+    ) {
       void transitionTo('expanded');
     }
   }, [transitionTo]);
@@ -204,8 +209,8 @@ export function useIslandState() {
       useIslandStore.getState().state;
 
     if (
-      currentState === 'compact' ||
-      currentState === 'expanded'
+      currentState === 'expanded' ||
+      currentState === 'compact'
     ) {
       void transitionTo(
         getCollapsedState(),
