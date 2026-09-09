@@ -1,4 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
+
 import {
   afterEach,
   beforeEach,
@@ -28,9 +29,10 @@ describe('useIslandState', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
-  it('transitions from idle to compact on mouse enter', async () => {
+  it('transitions from idle to expanded on mouse enter', async () => {
     const { result } = renderHook(() => useIslandState());
 
     await act(async () => {
@@ -39,25 +41,25 @@ describe('useIslandState', () => {
 
     expect(
       useIslandStore.getState().state,
-    ).toBe('compact');
+    ).toBe('expanded');
 
     expect(invoke).toHaveBeenCalledWith(
       'resize_island',
       {
-        width: 300,
-        height: 45,
+        width: 360,
+        height: 140,
       },
     );
 
     expect(invoke).toHaveBeenCalledWith(
       'notify_state_change',
       {
-        state: 'compact',
+        state: 'expanded',
       },
     );
   });
 
-  it('does nothing on mouse enter when already compact', async () => {
+  it('transitions from compact to expanded on mouse enter', async () => {
     useIslandStore.setState({
       state: 'compact',
     });
@@ -70,9 +72,22 @@ describe('useIslandState', () => {
 
     expect(
       useIslandStore.getState().state,
-    ).toBe('compact');
+    ).toBe('expanded');
 
-    expect(invoke).not.toHaveBeenCalled();
+    expect(invoke).toHaveBeenCalledWith(
+      'resize_island',
+      {
+        width: 360,
+        height: 140,
+      },
+    );
+
+    expect(invoke).toHaveBeenCalledWith(
+      'notify_state_change',
+      {
+        state: 'expanded',
+      },
+    );
   });
 
   it('transitions from compact to idle on mouse leave', async () => {
@@ -262,8 +277,6 @@ describe('useIslandState', () => {
     expect(
       useIslandStore.getState().state,
     ).toBe('idle');
-
-    vi.useRealTimers();
   });
 
   it('cancels a previous collapse timer when a new transition occurs', async () => {
@@ -290,7 +303,5 @@ describe('useIslandState', () => {
     expect(
       useIslandStore.getState().state,
     ).toBe('compact');
-
-    vi.useRealTimers();
   });
 });
