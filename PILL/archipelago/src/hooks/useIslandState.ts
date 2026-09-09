@@ -3,6 +3,10 @@ import { useCallback, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 
 import {
+  recordNativeResize,
+} from '../lib/perfDiagnostics';
+
+import {
   useIslandStore,
   ISLAND_DIMENSIONS,
   type IslandState,
@@ -70,6 +74,8 @@ export function useIslandState() {
             ISLAND_DIMENSIONS[targetState];
 
           try {
+            recordNativeResize();
+
             await invoke('resize_island', {
               width: dims.width,
               height: dims.height,
@@ -145,6 +151,7 @@ export function useIslandState() {
         clearTimeout(
           collapseTimerRef.current,
         );
+
         collapseTimerRef.current = null;
       }
 

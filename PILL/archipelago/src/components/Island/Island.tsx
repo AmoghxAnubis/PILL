@@ -1,4 +1,16 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import {
+  useEffect,
+} from 'react';
+
+import {
+  AnimatePresence,
+  motion,
+} from 'framer-motion';
+
+import {
+  recordReactRender,
+  startPerfDiagnostics,
+} from '../../lib/perfDiagnostics';
 
 import { useEvasion } from '../../hooks/useEvasion';
 import { useFeatureCoordinator } from '../../hooks/useFeatureCoordinator';
@@ -22,6 +34,12 @@ import { SplitState } from '../states/SplitState';
 import './Island.css';
 
 export function Island() {
+  recordReactRender();
+
+  useEffect(() => {
+    return startPerfDiagnostics();
+  }, []);
+
   useEvasion();
   useFeatureSources();
   useFeatureCoordinator();
