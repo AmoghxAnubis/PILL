@@ -37,11 +37,11 @@ export function useTelemetrySource(): void {
   useTauriTypedEvent(
     TAURI_EVENTS.TELEMETRY_UPDATE,
     (payload: TelemetryUpdate) => {
+      const cpu = payload.cpu;
+      const ram = payload.ram;
+
       const nextWarningState =
-        isTelemetryWarning(
-          payload.cpu_usage,
-          payload.ram_percentage,
-        );
+        isTelemetryWarning(cpu, ram);
 
       const previousWarningState =
         warningStateRef.current;
@@ -53,9 +53,8 @@ export function useTelemetrySource(): void {
         emitFeatureEvent(
           FEATURE_EVENTS.TELEMETRY_WARNING,
           {
-            cpu_usage: payload.cpu_usage,
-            ram_percentage:
-              payload.ram_percentage,
+            cpu_usage: cpu,
+            ram_percentage: ram,
           },
         );
       }
@@ -67,9 +66,8 @@ export function useTelemetrySource(): void {
         emitFeatureEvent(
           FEATURE_EVENTS.TELEMETRY_NORMAL,
           {
-            cpu_usage: payload.cpu_usage,
-            ram_percentage:
-              payload.ram_percentage,
+            cpu_usage: cpu,
+            ram_percentage: ram,
           },
         );
       }
@@ -77,10 +75,7 @@ export function useTelemetrySource(): void {
       warningStateRef.current =
         nextWarningState;
 
-      setTelemetry(
-        payload.cpu_usage,
-        payload.ram_percentage,
-      );
+      setTelemetry(cpu, ram);
     },
   );
 }

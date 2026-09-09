@@ -22,11 +22,17 @@ export interface FullscreenStateChanged {
 
 /**
  * Payload emitted by the hardware telemetry subsystem.
+ *
+ * This mirrors the Rust `TelemetrySnapshot` exactly:
+ *
+ * {
+ *   cpu: f32,
+ *   ram: f32
+ * }
  */
 export interface TelemetryUpdate {
-  cpu_usage: number;
-  ram_allocated_mb: number;
-  ram_percentage: number;
+  cpu: number;
+  ram: number;
 }
 
 /**
@@ -66,9 +72,14 @@ export interface TauriEventPayloads {
  * Consumers specify an event name and TypeScript automatically
  * determines the payload type for the handler.
  */
-export function useTauriTypedEvent<K extends keyof TauriEventPayloads>(
+export function useTauriTypedEvent<
+  K extends keyof TauriEventPayloads,
+>(
   eventName: K,
   handler: (payload: TauriEventPayloads[K]) => void,
 ): void {
-  useTauriEvent<TauriEventPayloads[K]>(eventName, handler);
+  useTauriEvent<TauriEventPayloads[K]>(
+    eventName,
+    handler,
+  );
 }
