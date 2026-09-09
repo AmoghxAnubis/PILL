@@ -1,4 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import {
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import {
   TAURI_EVENTS,
@@ -10,21 +15,21 @@ import {
 
 describe('Tauri event contracts', () => {
   it('uses the canonical event names', () => {
-    expect(TAURI_EVENTS.FULLSCREEN_STATE_CHANGED).toBe(
-      'fullscreen_state_changed',
-    );
+    expect(
+      TAURI_EVENTS.FULLSCREEN_STATE_CHANGED,
+    ).toBe('fullscreen_state_changed');
 
-    expect(TAURI_EVENTS.TELEMETRY_UPDATE).toBe(
-      'telemetry_update',
-    );
+    expect(
+      TAURI_EVENTS.TELEMETRY_UPDATE,
+    ).toBe('telemetry_update');
 
-    expect(TAURI_EVENTS.MEDIA_UPDATE).toBe(
-      'media_update',
-    );
+    expect(
+      TAURI_EVENTS.MEDIA_UPDATE,
+    ).toBe('media_update');
 
-    expect(TAURI_EVENTS.TIMER_TICK).toBe(
-      'timer_tick',
-    );
+    expect(
+      TAURI_EVENTS.TIMER_TICK,
+    ).toBe('timer_tick');
   });
 
   it('supports the fullscreen payload contract', () => {
@@ -37,14 +42,12 @@ describe('Tauri event contracts', () => {
 
   it('supports the telemetry payload contract', () => {
     const payload: TelemetryUpdate = {
-      cpu_usage: 92.5,
-      ram_allocated_mb: 8192,
-      ram_percentage: 87.3,
+      cpu: 92.5,
+      ram: 87.3,
     };
 
-    expect(payload.cpu_usage).toBe(92.5);
-    expect(payload.ram_allocated_mb).toBe(8192);
-    expect(payload.ram_percentage).toBe(87.3);
+    expect(payload.cpu).toBe(92.5);
+    expect(payload.ram).toBe(87.3);
   });
 
   it('supports the media payload contract', () => {
@@ -69,7 +72,9 @@ describe('Tauri event contracts', () => {
       is_running: true,
     };
 
-    expect(payload.seconds_remaining).toBe(1500);
+    expect(payload.seconds_remaining).toBe(
+      1500,
+    );
     expect(payload.is_running).toBe(true);
   });
 

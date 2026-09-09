@@ -117,9 +117,8 @@ describe('useTelemetrySource', () => {
     );
 
     emitTelemetry({
-      cpu_usage: 42,
-      ram_allocated_mb: 8000,
-      ram_percentage: 57,
+      cpu: 42,
+      ram: 57,
     });
 
     const state =
@@ -142,10 +141,9 @@ describe('useTelemetrySource', () => {
     );
 
     emitTelemetry({
-      cpu_usage:
+      cpu:
         TELEMETRY_WARNING_THRESHOLD,
-      ram_allocated_mb: 8000,
-      ram_percentage: 40,
+      ram: 40,
     });
 
     expect(handler).toHaveBeenCalledTimes(1);
@@ -170,9 +168,8 @@ describe('useTelemetrySource', () => {
     );
 
     emitTelemetry({
-      cpu_usage: 40,
-      ram_allocated_mb: 8000,
-      ram_percentage:
+      cpu: 40,
+      ram:
         TELEMETRY_WARNING_THRESHOLD,
     });
 
@@ -198,10 +195,9 @@ describe('useTelemetrySource', () => {
     );
 
     emitTelemetry({
-      cpu_usage:
+      cpu:
         TELEMETRY_WARNING_THRESHOLD - 0.1,
-      ram_allocated_mb: 8000,
-      ram_percentage:
+      ram:
         TELEMETRY_WARNING_THRESHOLD - 0.1,
     });
 
@@ -221,21 +217,18 @@ describe('useTelemetrySource', () => {
     );
 
     emitTelemetry({
-      cpu_usage: 90,
-      ram_allocated_mb: 8000,
-      ram_percentage: 50,
+      cpu: 90,
+      ram: 50,
     });
 
     emitTelemetry({
-      cpu_usage: 92,
-      ram_allocated_mb: 8000,
-      ram_percentage: 55,
+      cpu: 92,
+      ram: 55,
     });
 
     emitTelemetry({
-      cpu_usage: 95,
-      ram_allocated_mb: 8000,
-      ram_percentage: 60,
+      cpu: 95,
+      ram: 60,
     });
 
     expect(handler).toHaveBeenCalledTimes(1);
@@ -254,15 +247,13 @@ describe('useTelemetrySource', () => {
     );
 
     emitTelemetry({
-      cpu_usage: 90,
-      ram_allocated_mb: 8000,
-      ram_percentage: 50,
+      cpu: 90,
+      ram: 50,
     });
 
     emitTelemetry({
-      cpu_usage: 70,
-      ram_allocated_mb: 8000,
-      ram_percentage: 60,
+      cpu: 70,
+      ram: 60,
     });
 
     expect(handler).toHaveBeenCalledTimes(1);
@@ -286,21 +277,18 @@ describe('useTelemetrySource', () => {
     );
 
     emitTelemetry({
-      cpu_usage: 90,
-      ram_allocated_mb: 8000,
-      ram_percentage: 50,
+      cpu: 90,
+      ram: 50,
     });
 
     emitTelemetry({
-      cpu_usage: 70,
-      ram_allocated_mb: 8000,
-      ram_percentage: 60,
+      cpu: 70,
+      ram: 60,
     });
 
     emitTelemetry({
-      cpu_usage: 88,
-      ram_allocated_mb: 8000,
-      ram_percentage: 61,
+      cpu: 88,
+      ram: 61,
     });
 
     expect(handler).toHaveBeenCalledTimes(2);
