@@ -19,25 +19,31 @@ interface MediaStore {
   clearMedia: () => void;
 }
 
-function hasMediaPayload(payload: MediaUpdate): boolean {
-  return payload.title.length > 0 || payload.artist.length > 0;
+function hasMediaPayload(
+  payload: MediaUpdate,
+): boolean {
+  return (
+    payload.title.trim().length > 0 ||
+    payload.artist.trim().length > 0
+  );
 }
 
-export const useMediaStore = create<MediaStore>((set) => ({
-  media: EMPTY_MEDIA,
-  hasMedia: false,
+export const useMediaStore =
+  create<MediaStore>((set) => ({
+    media: EMPTY_MEDIA,
+    hasMedia: false,
 
-  setMedia: (media) => {
-    set({
-      media,
-      hasMedia: hasMediaPayload(media),
-    });
-  },
+    setMedia: (media) => {
+      set({
+        media,
+        hasMedia: hasMediaPayload(media),
+      });
+    },
 
-  clearMedia: () => {
-    set({
-      media: EMPTY_MEDIA,
-      hasMedia: false,
-    });
-  },
-}));
+    clearMedia: () => {
+      set({
+        media: EMPTY_MEDIA,
+        hasMedia: false,
+      });
+    },
+  }));
