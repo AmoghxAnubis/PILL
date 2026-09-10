@@ -6,6 +6,10 @@ import {
 } from '../lib/featureEvents';
 
 import {
+  recordTimerEvent,
+} from '../lib/perfDiagnostics';
+
+import {
   TAURI_EVENTS,
   useTauriTypedEvent,
   type TimerTick,
@@ -29,6 +33,8 @@ export function useFocusTimerSource(): void {
   useTauriTypedEvent(
     TAURI_EVENTS.TIMER_TICK,
     (payload: TimerTick) => {
+      recordTimerEvent();
+
       const nextHasStarted =
         statusRef.current !== 'idle' ||
         payload.is_running ||
@@ -44,7 +50,8 @@ export function useFocusTimerSource(): void {
       const previousStatus =
         statusRef.current;
 
-      statusRef.current = nextStatus;
+      statusRef.current =
+        nextStatus;
 
       if (
         nextStatus === 'completed' &&

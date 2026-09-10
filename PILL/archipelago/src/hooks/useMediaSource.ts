@@ -6,6 +6,10 @@ import {
 } from '../lib/featureEvents';
 
 import {
+  recordMediaEvent,
+} from '../lib/perfDiagnostics';
+
+import {
   TAURI_EVENTS,
   useTauriTypedEvent,
   type MediaUpdate,
@@ -20,8 +24,13 @@ interface MeaningfulMediaState {
   is_playing: boolean;
 }
 
-function hasMediaPayload(payload: MediaUpdate): boolean {
-  return payload.title.length > 0 || payload.artist.length > 0;
+function hasMediaPayload(
+  payload: MediaUpdate,
+): boolean {
+  return (
+    payload.title.length > 0 ||
+    payload.artist.length > 0
+  );
 }
 
 export function useMediaSource(): void {
@@ -34,11 +43,15 @@ export function useMediaSource(): void {
   );
 
   const previousMeaningfulStateRef =
-    useRef<MeaningfulMediaState | null>(null);
+    useRef<MeaningfulMediaState | null>(
+      null,
+    );
 
   useTauriTypedEvent(
     TAURI_EVENTS.MEDIA_UPDATE,
     (payload: MediaUpdate) => {
+      recordMediaEvent();
+
       const currentHasMedia =
         hasMediaPayload(payload);
 
@@ -57,7 +70,8 @@ export function useMediaSource(): void {
           );
         }
 
-        previousMeaningfulStateRef.current = null;
+        previousMeaningfulStateRef.current =
+          null;
 
         clearMedia();
 
@@ -82,7 +96,9 @@ export function useMediaSource(): void {
           },
         );
 
-        previousMeaningfulStateRef.current = next;
+        previousMeaningfulStateRef.current =
+          next;
+
         setMedia(payload);
 
         return;
@@ -94,10 +110,12 @@ export function useMediaSource(): void {
         previous.artist !== next.artist;
 
       const playbackStarted =
-        !previous.is_playing && next.is_playing;
+        !previous.is_playing &&
+        next.is_playing;
 
       const playbackPaused =
-        previous.is_playing && !next.is_playing;
+        previous.is_playing &&
+        !next.is_playing;
 
       if (playbackStarted) {
         emitFeatureEvent(
@@ -133,7 +151,8 @@ export function useMediaSource(): void {
         );
       }
 
-      previousMeaningfulStateRef.current = next;
+      previousMeaningfulStateRef.current =
+        next;
 
       setMedia(payload);
     },

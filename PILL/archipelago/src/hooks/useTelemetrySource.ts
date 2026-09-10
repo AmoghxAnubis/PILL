@@ -6,6 +6,10 @@ import {
 } from '../lib/featureEvents';
 
 import {
+  recordTelemetryEvent,
+} from '../lib/perfDiagnostics';
+
+import {
   TAURI_EVENTS,
   useTauriTypedEvent,
   type TelemetryUpdate,
@@ -37,6 +41,8 @@ export function useTelemetrySource(): void {
   useTauriTypedEvent(
     TAURI_EVENTS.TELEMETRY_UPDATE,
     (payload: TelemetryUpdate) => {
+      recordTelemetryEvent();
+
       const cpu = payload.cpu;
       const ram = payload.ram;
 
