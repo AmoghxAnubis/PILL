@@ -15,7 +15,9 @@ import {
   type TelemetryUpdate,
 } from '../lib/tauriEvents';
 
-import { useTelemetryStore } from '../store/telemetryStore';
+import {
+  useTelemetryStore,
+} from '../store/telemetryStore';
 
 export const TELEMETRY_WARNING_THRESHOLD =
   85;
@@ -36,11 +38,22 @@ export function useTelemetrySource(): void {
       (state) => state.setTelemetry,
     );
 
-  const warningStateRef = useRef(false);
+  const warningStateRef =
+    useRef(false);
 
   useTauriTypedEvent(
     TAURI_EVENTS.TELEMETRY_UPDATE,
     (payload: TelemetryUpdate) => {
+      if (import.meta.env.DEV) {
+        console.debug(
+          '[PILL Perf] Telemetry source received:',
+          {
+            cpu: payload.cpu,
+            ram: payload.ram,
+          },
+        );
+      }
+
       recordTelemetryEvent();
 
       const cpu = payload.cpu;
