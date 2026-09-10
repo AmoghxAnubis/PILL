@@ -61,12 +61,14 @@ export function Island() {
     handleCollapse,
   } = useIslandState();
 
-  const shouldShowIsland = isIslandVisible(
-    visible,
-    isEvasionActive,
-  );
+  const shouldShowIsland =
+    isIslandVisible(
+      visible,
+      isEvasionActive,
+    );
 
-  const dims = ISLAND_DIMENSIONS[state];
+  const dims =
+    ISLAND_DIMENSIONS[state];
 
   return (
     <div className="island-wrapper">
@@ -120,7 +122,8 @@ export function Island() {
                   opacity: 0,
                 }}
                 transition={{
-                  duration: 0.15,
+                  duration: 0.12,
+                  ease: 'easeOut',
                 }}
               >
                 <IdleState />
@@ -140,7 +143,8 @@ export function Island() {
                   opacity: 0,
                 }}
                 transition={{
-                  duration: 0.15,
+                  duration: 0.12,
+                  ease: 'easeOut',
                 }}
               >
                 <CompactState
@@ -156,18 +160,22 @@ export function Island() {
                 key="expanded"
                 initial={{
                   opacity: 0,
-                  scale: 0.95,
+                  scale: 0.96,
+                  y: 4,
                 }}
                 animate={{
                   opacity: 1,
                   scale: 1,
+                  y: 0,
                 }}
                 exit={{
                   opacity: 0,
-                  scale: 0.95,
+                  scale: 0.97,
+                  y: 4,
                 }}
                 transition={{
                   duration: 0.2,
+                  ease: 'easeOut',
                 }}
               >
                 <ExpandedState
@@ -192,7 +200,8 @@ export function Island() {
                   opacity: 0,
                 }}
                 transition={{
-                  duration: 0.15,
+                  duration: 0.12,
+                  ease: 'easeOut',
                 }}
               >
                 <SplitState
