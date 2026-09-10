@@ -6,7 +6,7 @@ type PerfCounter =
   | 'reactRenders'
   | 'nativeResizeCalls';
 
-interface PerfSnapshot {
+export interface PerfSnapshot {
   uptimeSeconds: number;
   telemetryEvents: number;
   mediaEvents: number;
@@ -16,20 +16,23 @@ interface PerfSnapshot {
   nativeResizeCalls: number;
 }
 
-const startedAt = Date.now();
+interface PerfRuntimeState {
+  startedAt: number;
+  counters: Record<PerfCounter, number>;
+  diagnosticsStarted: boolean;
+  diagnosticsTimer:
+    | ReturnType<typeof setInterval>
+    | null;
+}
 
-const counters: Record<PerfCounter, number> = {
-  telemetryEvents: 0,
-  mediaEvents: 0,
-  timerEvents: 0,
-  featureEvents: 0,
-  reactRenders: 0,
-  nativeResizeCalls: 0,
-};
+const PERF_GLOBAL_KEY =
+  '__PILL_PERF_DIAGNOSTICS__';
 
-let diagnosticsStarted = false;
-let diagnosticsTimer: ReturnType<typeof setInterval> | null =
-  null;
+declare global {
+  interface Window {
+    [PERF_GLOBAL_KEY]?: PerfRuntimeState;
+  }
+}
 
 function isDiagnosticsEnabled(): boolean {
   return (
@@ -38,8 +41,44 @@ function isDiagnosticsEnabled(): boolean {
   );
 }
 
-function increment(counter: PerfCounter): void {
-  counters[counter] += 1;
+function createRuntimeState(): PerfRuntimeState {
+  return {
+    startedAt: Date.now(),
+
+    counters: {
+      telemetryEvents: 0,
+      mediaEvents: 0,
+      timerEvents: 0,
+      featureEvents: 0,
+      reactRenders: 0,
+      nativeResizeCalls: 0,
+    },
+
+    diagnosticsStarted: false,
+    diagnosticsTimer: null,
+  };
+}
+
+function getRuntimeState(): PerfRuntimeState {
+  if (!window[PERF_GLOBAL_KEY]) {
+    window[PERF_GLOBAL_KEY] =
+      createRuntimeState();
+  }
+
+  return window[PERF_GLOBAL_KEY]!;
+}
+
+function increment(
+  counter: PerfCounter,
+): void {
+  if (!isDiagnosticsEnabled()) {
+    return;
+  }
+
+  const runtime =
+    getRuntimeState();
+
+  runtime.counters[counter] += 1;
 }
 
 export function recordTelemetryEvent(): void {
@@ -67,23 +106,35 @@ export function recordNativeResize(): void {
 }
 
 export function getPerfSnapshot(): PerfSnapshot {
+  const runtime =
+    getRuntimeState();
+
   return {
     uptimeSeconds:
       Math.floor(
-        (Date.now() - startedAt) / 1000,
+        (Date.now() -
+          runtime.startedAt) /
+          1000,
       ),
+
     telemetryEvents:
-      counters.telemetryEvents,
+      runtime.counters.telemetryEvents,
+
     mediaEvents:
-      counters.mediaEvents,
+      runtime.counters.mediaEvents,
+
     timerEvents:
-      counters.timerEvents,
+      runtime.counters.timerEvents,
+
     featureEvents:
-      counters.featureEvents,
+      runtime.counters.featureEvents,
+
     reactRenders:
-      counters.reactRenders,
+      runtime.counters.reactRenders,
+
     nativeResizeCalls:
-      counters.nativeResizeCalls,
+      runtime.counters
+        .nativeResizeCalls,
   };
 }
 
@@ -106,14 +157,19 @@ export function logPerfSnapshot(): void {
   console.table({
     'Telemetry events':
       snapshot.telemetryEvents,
+
     'Media events':
       snapshot.mediaEvents,
+
     'Timer events':
       snapshot.timerEvents,
+
     'Feature events':
       snapshot.featureEvents,
+
     'React renders':
       snapshot.reactRenders,
+
     'Native resize calls':
       snapshot.nativeResizeCalls,
   });
@@ -122,34 +178,43 @@ export function logPerfSnapshot(): void {
 }
 
 export function startPerfDiagnostics(): () => void {
-  if (
-    !isDiagnosticsEnabled() ||
-    diagnosticsStarted
-  ) {
+  if (!isDiagnosticsEnabled()) {
     return () => {};
   }
 
-  diagnosticsStarted = true;
+  const runtime =
+    getRuntimeState();
+
+  if (runtime.diagnosticsStarted) {
+    return () => {};
+  }
+
+  runtime.diagnosticsStarted = true;
 
   console.info(
     '[PILL Perf] Diagnostics started',
   );
 
-  diagnosticsTimer =
+  runtime.diagnosticsTimer =
     setInterval(
       logPerfSnapshot,
       60_000,
     );
 
   return () => {
-    if (diagnosticsTimer) {
+    const current =
+      getRuntimeState();
+
+    if (current.diagnosticsTimer) {
       clearInterval(
-        diagnosticsTimer,
+        current.diagnosticsTimer,
       );
 
-      diagnosticsTimer = null;
+      current.diagnosticsTimer =
+        null;
     }
 
-    diagnosticsStarted = false;
+    current.diagnosticsStarted =
+      false;
   };
 }
