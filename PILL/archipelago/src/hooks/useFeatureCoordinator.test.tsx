@@ -63,6 +63,31 @@ describe('useFeatureCoordinator', () => {
     vi.restoreAllMocks();
   });
 
+  function emit(
+    eventName: string,
+  ): void {
+    const handler =
+      handlers.get(eventName);
+
+    if (!handler) {
+      throw new Error(
+        `No handler registered for ${eventName}`,
+      );
+    }
+
+    handler();
+  }
+
+  function expectActiveWidgets(
+    widgets: string[],
+  ): void {
+    expect(
+      useWidgetStore
+        .getState()
+        .activeWidgets,
+    ).toEqual(widgets);
+  }
+
   it('subscribes to all supported feature events', () => {
     renderHook(() =>
       useFeatureCoordinator(),
@@ -144,17 +169,13 @@ describe('useFeatureCoordinator', () => {
       useFeatureCoordinator(),
     );
 
-    handlers
-      .get(
-        FEATURE_EVENTS.MEDIA_AVAILABLE,
-      )
-      ?.();
+    emit(
+      FEATURE_EVENTS.MEDIA_AVAILABLE,
+    );
 
-    expect(
-      useWidgetStore
-        .getState()
-        .activeWidgets,
-    ).toEqual(['media']);
+    expectActiveWidgets([
+      'media',
+    ]);
   });
 
   it('deactivates media when media becomes unavailable', () => {
@@ -169,17 +190,13 @@ describe('useFeatureCoordinator', () => {
       useFeatureCoordinator(),
     );
 
-    handlers
-      .get(
-        FEATURE_EVENTS.MEDIA_UNAVAILABLE,
-      )
-      ?.();
+    emit(
+      FEATURE_EVENTS.MEDIA_UNAVAILABLE,
+    );
 
-    expect(
-      useWidgetStore
-        .getState()
-        .activeWidgets,
-    ).toEqual(['focusTimer']);
+    expectActiveWidgets([
+      'focusTimer',
+    ]);
   });
 
   it('activates media when media.started occurs', () => {
@@ -187,17 +204,13 @@ describe('useFeatureCoordinator', () => {
       useFeatureCoordinator(),
     );
 
-    handlers
-      .get(
-        FEATURE_EVENTS.MEDIA_STARTED,
-      )
-      ?.();
+    emit(
+      FEATURE_EVENTS.MEDIA_STARTED,
+    );
 
-    expect(
-      useWidgetStore
-        .getState()
-        .activeWidgets,
-    ).toEqual(['media']);
+    expectActiveWidgets([
+      'media',
+    ]);
   });
 
   it('activates focus timer when completed', () => {
@@ -205,17 +218,13 @@ describe('useFeatureCoordinator', () => {
       useFeatureCoordinator(),
     );
 
-    handlers
-      .get(
-        FEATURE_EVENTS.FOCUS_TIMER_COMPLETED,
-      )
-      ?.();
+    emit(
+      FEATURE_EVENTS.FOCUS_TIMER_COMPLETED,
+    );
 
-    expect(
-      useWidgetStore
-        .getState()
-        .activeWidgets,
-    ).toEqual(['focusTimer']);
+    expectActiveWidgets([
+      'focusTimer',
+    ]);
   });
 
   it('deactivates focus timer on reset', () => {
@@ -230,17 +239,13 @@ describe('useFeatureCoordinator', () => {
       useFeatureCoordinator(),
     );
 
-    handlers
-      .get(
-        FEATURE_EVENTS.FOCUS_TIMER_RESET,
-      )
-      ?.();
+    emit(
+      FEATURE_EVENTS.FOCUS_TIMER_RESET,
+    );
 
-    expect(
-      useWidgetStore
-        .getState()
-        .activeWidgets,
-    ).toEqual(['media']);
+    expectActiveWidgets([
+      'media',
+    ]);
   });
 
   it('activates telemetry on warning', () => {
@@ -248,17 +253,13 @@ describe('useFeatureCoordinator', () => {
       useFeatureCoordinator(),
     );
 
-    handlers
-      .get(
-        FEATURE_EVENTS.TELEMETRY_WARNING,
-      )
-      ?.();
+    emit(
+      FEATURE_EVENTS.TELEMETRY_WARNING,
+    );
 
-    expect(
-      useWidgetStore
-        .getState()
-        .activeWidgets,
-    ).toEqual(['telemetry']);
+    expectActiveWidgets([
+      'telemetry',
+    ]);
   });
 
   it('deactivates telemetry when warning clears', () => {
@@ -273,17 +274,13 @@ describe('useFeatureCoordinator', () => {
       useFeatureCoordinator(),
     );
 
-    handlers
-      .get(
-        FEATURE_EVENTS.TELEMETRY_NORMAL,
-      )
-      ?.();
+    emit(
+      FEATURE_EVENTS.TELEMETRY_NORMAL,
+    );
 
-    expect(
-      useWidgetStore
-        .getState()
-        .activeWidgets,
-    ).toEqual(['media']);
+    expectActiveWidgets([
+      'media',
+    ]);
   });
 
   it('does not duplicate an already active widget', () => {
@@ -295,22 +292,250 @@ describe('useFeatureCoordinator', () => {
       useFeatureCoordinator(),
     );
 
-    handlers
-      .get(
-        FEATURE_EVENTS.MEDIA_AVAILABLE,
-      )
-      ?.();
+    emit(
+      FEATURE_EVENTS.MEDIA_AVAILABLE,
+    );
 
-    handlers
-      .get(
-        FEATURE_EVENTS.MEDIA_AVAILABLE,
-      )
-      ?.();
+    emit(
+      FEATURE_EVENTS.MEDIA_AVAILABLE,
+    );
 
-    expect(
-      useWidgetStore
-        .getState()
-        .activeWidgets,
-    ).toEqual(['media']);
+    expectActiveWidgets([
+      'media',
+    ]);
+  });
+
+  it('keeps media active when focus timer starts', () => {
+    renderHook(() =>
+      useFeatureCoordinator(),
+    );
+
+    emit(
+      FEATURE_EVENTS.MEDIA_AVAILABLE,
+    );
+
+    emit(
+      FEATURE_EVENTS.FOCUS_TIMER_STARTED,
+    );
+
+    expectActiveWidgets([
+      'media',
+      'focusTimer',
+    ]);
+  });
+
+  it('keeps both media and focus timer active when telemetry warning occurs', () => {
+    renderHook(() =>
+      useFeatureCoordinator(),
+    );
+
+    emit(
+      FEATURE_EVENTS.MEDIA_AVAILABLE,
+    );
+
+    emit(
+      FEATURE_EVENTS.FOCUS_TIMER_STARTED,
+    );
+
+    emit(
+      FEATURE_EVENTS.TELEMETRY_WARNING,
+    );
+
+    expectActiveWidgets([
+      'media',
+      'focusTimer',
+      'telemetry',
+    ]);
+  });
+
+  it('removes telemetry without disturbing media and focus timer', () => {
+    useWidgetStore.setState({
+      activeWidgets: [
+        'media',
+        'focusTimer',
+        'telemetry',
+      ],
+    });
+
+    renderHook(() =>
+      useFeatureCoordinator(),
+    );
+
+    emit(
+      FEATURE_EVENTS.TELEMETRY_NORMAL,
+    );
+
+    expectActiveWidgets([
+      'media',
+      'focusTimer',
+    ]);
+  });
+
+  it('removes focus timer without disturbing media and telemetry', () => {
+    useWidgetStore.setState({
+      activeWidgets: [
+        'media',
+        'focusTimer',
+        'telemetry',
+      ],
+    });
+
+    renderHook(() =>
+      useFeatureCoordinator(),
+    );
+
+    emit(
+      FEATURE_EVENTS.FOCUS_TIMER_RESET,
+    );
+
+    expectActiveWidgets([
+      'media',
+      'telemetry',
+    ]);
+  });
+
+  it('removes media without disturbing focus timer and telemetry', () => {
+    useWidgetStore.setState({
+      activeWidgets: [
+        'media',
+        'focusTimer',
+        'telemetry',
+      ],
+    });
+
+    renderHook(() =>
+      useFeatureCoordinator(),
+    );
+
+    emit(
+      FEATURE_EVENTS.MEDIA_UNAVAILABLE,
+    );
+
+    expectActiveWidgets([
+      'focusTimer',
+      'telemetry',
+    ]);
+  });
+
+  it('handles a full multi-feature lifecycle', () => {
+    renderHook(() =>
+      useFeatureCoordinator(),
+    );
+
+    emit(
+      FEATURE_EVENTS.MEDIA_AVAILABLE,
+    );
+
+    expectActiveWidgets([
+      'media',
+    ]);
+
+    emit(
+      FEATURE_EVENTS.FOCUS_TIMER_STARTED,
+    );
+
+    expectActiveWidgets([
+      'media',
+      'focusTimer',
+    ]);
+
+    emit(
+      FEATURE_EVENTS.TELEMETRY_WARNING,
+    );
+
+    expectActiveWidgets([
+      'media',
+      'focusTimer',
+      'telemetry',
+    ]);
+
+    emit(
+      FEATURE_EVENTS.TELEMETRY_NORMAL,
+    );
+
+    expectActiveWidgets([
+      'media',
+      'focusTimer',
+    ]);
+
+    emit(
+      FEATURE_EVENTS.MEDIA_UNAVAILABLE,
+    );
+
+    expectActiveWidgets([
+      'focusTimer',
+    ]);
+
+    emit(
+      FEATURE_EVENTS.FOCUS_TIMER_RESET,
+    );
+
+    expectActiveWidgets([]);
+  });
+
+  it('handles feature activation in different event orders', () => {
+    renderHook(() =>
+      useFeatureCoordinator(),
+    );
+
+    emit(
+      FEATURE_EVENTS.TELEMETRY_WARNING,
+    );
+
+    emit(
+      FEATURE_EVENTS.MEDIA_AVAILABLE,
+    );
+
+    emit(
+      FEATURE_EVENTS.FOCUS_TIMER_STARTED,
+    );
+
+    expectActiveWidgets([
+      'telemetry',
+      'media',
+      'focusTimer',
+    ]);
+  });
+
+  it('ignores removal events for inactive widgets', () => {
+    renderHook(() =>
+      useFeatureCoordinator(),
+    );
+
+    emit(
+      FEATURE_EVENTS.MEDIA_UNAVAILABLE,
+    );
+
+    emit(
+      FEATURE_EVENTS.FOCUS_TIMER_RESET,
+    );
+
+    emit(
+      FEATURE_EVENTS.TELEMETRY_NORMAL,
+    );
+
+    expectActiveWidgets([]);
+  });
+
+  it('does not duplicate widgets when multiple equivalent activation events fire', () => {
+    renderHook(() =>
+      useFeatureCoordinator(),
+    );
+
+    emit(
+      FEATURE_EVENTS.MEDIA_AVAILABLE,
+    );
+
+    emit(
+      FEATURE_EVENTS.MEDIA_STARTED,
+    );
+
+    emit(
+      FEATURE_EVENTS.MEDIA_STARTED,
+    );
+
+    expectActiveWidgets([
+      'media',
+    ]);
   });
 });
