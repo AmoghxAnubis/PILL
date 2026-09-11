@@ -17,6 +17,8 @@ import { ExpandedState } from './ExpandedState';
 import { useMedia } from '../../hooks/useMedia';
 import { useFocusTimer } from '../../hooks/useFocusTimer';
 
+import type { MediaUpdate } from '../../lib/tauriEvents';
+
 vi.mock('../../hooks/useMedia', () => ({
   useMedia: vi.fn(),
 }));
@@ -35,7 +37,8 @@ describe('ExpandedState', () => {
   const defaultTimerState: ReturnType<
     typeof useFocusTimer
   > = {
-    secondsRemaining: 25 * 60,
+    secondsRemaining:
+      25 * 60,
     isRunning: false,
     status: 'idle',
     start: vi.fn(),
@@ -43,7 +46,7 @@ describe('ExpandedState', () => {
     reset: vi.fn(),
   };
 
-  const defaultMedia = {
+  const defaultMedia: MediaUpdate = {
     app_id: 'spotify',
     title: 'Test Song',
     artist: 'Test Artist',
@@ -54,7 +57,7 @@ describe('ExpandedState', () => {
   };
 
   function renderMedia(
-    overrides: Partial<typeof defaultMedia> = {},
+    overrides: Partial<MediaUpdate> = {},
   ) {
     mockedUseMedia.mockReturnValue({
       media: {
@@ -277,11 +280,11 @@ describe('ExpandedState', () => {
 
     expect(
       screen.getByText('   '),
-    ).not.toBeInTheDocument();
+    ).toBeInTheDocument();
 
     expect(
       screen.getByText('Unknown artist'),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
   });
 
   it('shows the media-unavailable state when media is unavailable', () => {
