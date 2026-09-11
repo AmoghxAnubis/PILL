@@ -64,7 +64,9 @@ describe('useFocusTimer', () => {
       await result.current.start();
     });
 
-    expect(mockedInvoke).toHaveBeenCalledWith(
+    expect(
+      mockedInvoke,
+    ).toHaveBeenCalledWith(
       'start_focus_timer',
     );
 
@@ -94,7 +96,9 @@ describe('useFocusTimer', () => {
       await result.current.pause();
     });
 
-    expect(mockedInvoke).toHaveBeenCalledWith(
+    expect(
+      mockedInvoke,
+    ).toHaveBeenCalledWith(
       'pause_focus_timer',
     );
 
@@ -120,7 +124,9 @@ describe('useFocusTimer', () => {
       await result.current.reset();
     });
 
-    expect(mockedInvoke).toHaveBeenCalledWith(
+    expect(
+      mockedInvoke,
+    ).toHaveBeenCalledWith(
       'reset_focus_timer',
     );
 
@@ -458,10 +464,11 @@ describe('useFocusTimer', () => {
     unsubscribe();
   });
 
-  it('keeps local state unchanged when starting the timer fails', async () => {
-    mockedInvoke.mockRejectedValueOnce(
-      new Error('native start failed'),
-    );
+  it('keeps the existing timer state when starting the timer fails', async () => {
+    mockedInvoke.mockResolvedValueOnce({
+      seconds_remaining: 1499,
+      is_running: true,
+    });
 
     const { result } =
       renderHook(() => useFocusTimer());
@@ -472,15 +479,35 @@ describe('useFocusTimer', () => {
 
     expect(
       result.current.secondsRemaining,
-    ).toBe(25 * 60);
+    ).toBe(1499);
 
     expect(
       result.current.isRunning,
-    ).toBe(false);
+    ).toBe(true);
 
     expect(
       result.current.status,
-    ).toBe('idle');
+    ).toBe('running');
+
+    mockedInvoke.mockRejectedValueOnce(
+      new Error('native start failed'),
+    );
+
+    await act(async () => {
+      await result.current.start();
+    });
+
+    expect(
+      result.current.secondsRemaining,
+    ).toBe(1499);
+
+    expect(
+      result.current.isRunning,
+    ).toBe(true);
+
+    expect(
+      result.current.status,
+    ).toBe('running');
   });
 
   it('keeps local state unchanged when pausing fails', async () => {
