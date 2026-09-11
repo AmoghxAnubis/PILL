@@ -209,3 +209,86 @@ describe('ExpandedState', () => {
     ).toBeInTheDocument();
   });
 });
+it('shows the artwork fallback when artwork is unavailable', () => {
+  mockMediaState({
+    title: 'Test Song',
+    artist: 'Test Artist',
+    artwork: null,
+    is_playing: true,
+  });
+
+  render(
+    <ExpandedState
+      onCollapse={vi.fn()}
+    />,
+  );
+
+  expect(
+    screen.getByText('♪'),
+  ).toBeInTheDocument();
+
+  expect(
+    screen.getByLabelText('Playing'),
+  ).toBeInTheDocument();
+});
+
+it('shows Unknown artist when artist metadata is empty', () => {
+  mockMediaState({
+    title: 'Test Song',
+    artist: '',
+    artwork: null,
+    is_playing: true,
+  });
+
+  render(
+    <ExpandedState
+      onCollapse={vi.fn()}
+    />,
+  );
+
+  expect(
+    screen.getByText('Unknown artist'),
+  ).toBeInTheDocument();
+});
+
+it('shows Unknown artist when artist metadata is whitespace', () => {
+  mockMediaState({
+    title: 'Test Song',
+    artist: '   ',
+    artwork: null,
+    is_playing: true,
+  });
+
+  render(
+    <ExpandedState
+      onCollapse={vi.fn()}
+    />,
+  );
+
+  expect(
+    screen.getByText('   '),
+  ).not.toBeInTheDocument();
+
+  expect(
+    screen.getByText('Unknown artist'),
+  ).toBeInTheDocument();
+});
+
+it('shows the media-unavailable state when there is no meaningful metadata', () => {
+  mockMediaState({
+    title: '',
+    artist: '',
+    artwork: null,
+    is_playing: false,
+  });
+
+  render(
+    <ExpandedState
+      onCollapse={vi.fn()}
+    />,
+  );
+
+  expect(
+    screen.getByText('No active media session'),
+  ).toBeInTheDocument();
+});
