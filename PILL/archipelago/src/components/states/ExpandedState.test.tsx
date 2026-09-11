@@ -37,8 +37,7 @@ describe('ExpandedState', () => {
   const defaultTimerState: ReturnType<
     typeof useFocusTimer
   > = {
-    secondsRemaining:
-      25 * 60,
+    secondsRemaining: 25 * 60,
     isRunning: false,
     status: 'idle',
     start: vi.fn(),
@@ -255,7 +254,11 @@ describe('ExpandedState', () => {
     });
 
     const artwork =
-      screen.getByRole('img');
+      document.querySelector(
+        '.state-expanded__media-artwork',
+      );
+
+    expect(artwork).not.toBeNull();
 
     expect(artwork).toHaveAttribute(
       'src',
@@ -279,12 +282,14 @@ describe('ExpandedState', () => {
     });
 
     expect(
-      screen.getByText('   '),
+      screen.getByText('Unknown artist'),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText('Unknown artist'),
-    ).not.toBeInTheDocument();
+      document.querySelector(
+        '.state-expanded__media-artist',
+      )?.textContent,
+    ).toBe('Unknown artist');
   });
 
   it('shows the media-unavailable state when media is unavailable', () => {
