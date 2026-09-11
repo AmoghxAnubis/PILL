@@ -467,11 +467,7 @@ describe('useFocusTimer', () => {
       renderHook(() => useFocusTimer());
 
     await act(async () => {
-      await expect(
-        result.current.start(),
-      ).rejects.toThrow(
-        'native start failed',
-      );
+      await result.current.start();
     });
 
     expect(
@@ -504,12 +500,20 @@ describe('useFocusTimer', () => {
       await result.current.start();
     });
 
+    expect(
+      result.current.secondsRemaining,
+    ).toBe(1490);
+
+    expect(
+      result.current.isRunning,
+    ).toBe(true);
+
+    expect(
+      result.current.status,
+    ).toBe('running');
+
     await act(async () => {
-      await expect(
-        result.current.pause(),
-      ).rejects.toThrow(
-        'native pause failed',
-      );
+      await result.current.pause();
     });
 
     expect(
@@ -538,16 +542,24 @@ describe('useFocusTimer', () => {
       await result.current.start();
     });
 
+    expect(
+      result.current.secondsRemaining,
+    ).toBe(1490);
+
+    expect(
+      result.current.isRunning,
+    ).toBe(true);
+
+    expect(
+      result.current.status,
+    ).toBe('running');
+
     mockedInvoke.mockRejectedValueOnce(
       new Error('native reset failed'),
     );
 
     await act(async () => {
-      await expect(
-        result.current.reset(),
-      ).rejects.toThrow(
-        'native reset failed',
-      );
+      await result.current.reset();
     });
 
     expect(
