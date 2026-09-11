@@ -3,6 +3,7 @@ import {
   render,
   screen,
 } from '@testing-library/react';
+
 import {
   afterEach,
   describe,
@@ -12,9 +13,9 @@ import {
 } from 'vitest';
 
 import { ExpandedState } from './ExpandedState';
+
 import { useMedia } from '../../hooks/useMedia';
 import { useFocusTimer } from '../../hooks/useFocusTimer';
-
 
 vi.mock('../../hooks/useMedia', () => ({
   useMedia: vi.fn(),
@@ -24,18 +25,16 @@ vi.mock('../../hooks/useFocusTimer', () => ({
   useFocusTimer: vi.fn(),
 }));
 
+const mockedUseMedia =
+  vi.mocked(useMedia);
 
-
-const mockedUseMedia = vi.mocked(useMedia);
-const mockedUseFocusTimer = vi.mocked(useFocusTimer);
-
-afterEach(() => {
-  cleanup();
-  vi.clearAllMocks();
-});
+const mockedUseFocusTimer =
+  vi.mocked(useFocusTimer);
 
 describe('ExpandedState', () => {
-  const defaultTimerState: ReturnType<typeof useFocusTimer> = {
+  const defaultTimerState: ReturnType<
+    typeof useFocusTimer
+  > = {
     secondsRemaining: 25 * 60,
     isRunning: false,
     status: 'idle',
@@ -54,36 +53,13 @@ describe('ExpandedState', () => {
     artwork: null,
   };
 
-  it('shows media progress and formatted time', () => {
-    mockedUseMedia.mockReturnValue({
-      media: defaultMedia,
-      hasMedia: true,
-    });
-
-    mockedUseFocusTimer.mockReturnValue(
-      defaultTimerState,
-    );
-
-    render(
-      <ExpandedState onCollapse={vi.fn()} />,
-    );
-
-    expect(
-      screen.getByRole('progressbar', {
-        name: 'Media progress',
-      }),
-    ).toHaveAttribute('aria-valuenow', '50');
-
-    expect(screen.getByText('2:00')).toBeInTheDocument();
-    expect(screen.getByText('4:00')).toBeInTheDocument();
-  });
-
-  it('handles zero duration safely', () => {
+  function renderMedia(
+    overrides: Partial<typeof defaultMedia> = {},
+  ) {
     mockedUseMedia.mockReturnValue({
       media: {
         ...defaultMedia,
-        duration: 0,
-        position: 0,
+        ...overrides,
       },
       hasMedia: true,
     });
@@ -93,14 +69,52 @@ describe('ExpandedState', () => {
     );
 
     render(
-      <ExpandedState onCollapse={vi.fn()} />,
+      <ExpandedState
+        onCollapse={vi.fn()}
+      />,
     );
+  }
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it('shows media progress and formatted time', () => {
+    renderMedia();
 
     expect(
       screen.getByRole('progressbar', {
         name: 'Media progress',
       }),
-    ).toHaveAttribute('aria-valuenow', '0');
+    ).toHaveAttribute(
+      'aria-valuenow',
+      '50',
+    );
+
+    expect(
+      screen.getByText('2:00'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText('4:00'),
+    ).toBeInTheDocument();
+  });
+
+  it('handles zero duration safely', () => {
+    renderMedia({
+      duration: 0,
+      position: 0,
+    });
+
+    expect(
+      screen.getByRole('progressbar', {
+        name: 'Media progress',
+      }),
+    ).toHaveAttribute(
+      'aria-valuenow',
+      '0',
+    );
 
     expect(
       screen.getAllByText('0:00'),
@@ -121,7 +135,9 @@ describe('ExpandedState', () => {
     });
 
     render(
-      <ExpandedState onCollapse={vi.fn()} />,
+      <ExpandedState
+        onCollapse={vi.fn()}
+      />,
     );
 
     expect(
@@ -153,7 +169,9 @@ describe('ExpandedState', () => {
     });
 
     render(
-      <ExpandedState onCollapse={vi.fn()} />,
+      <ExpandedState
+        onCollapse={vi.fn()}
+      />,
     );
 
     expect(
@@ -185,7 +203,9 @@ describe('ExpandedState', () => {
     });
 
     render(
-      <ExpandedState onCollapse={vi.fn()} />,
+      <ExpandedState
+        onCollapse={vi.fn()}
+      />,
     );
 
     expect(
@@ -193,7 +213,9 @@ describe('ExpandedState', () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText('Focus session complete'),
+      screen.getByText(
+        'Focus session complete',
+      ),
     ).toBeInTheDocument();
 
     expect(
@@ -208,87 +230,112 @@ describe('ExpandedState', () => {
       }),
     ).toBeInTheDocument();
   });
-});
-it('shows the artwork fallback when artwork is unavailable', () => {
-  mockMediaState({
-    title: 'Test Song',
-    artist: 'Test Artist',
-    artwork: null,
-    is_playing: true,
+
+  it('shows the artwork fallback when artwork is unavailable', () => {
+    renderMedia({
+      artwork: null,
+    });
+
+    expect(
+      screen.getByText('♪'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByLabelText('Playing'),
+    ).toBeInTheDocument();
   });
 
-  render(
-    <ExpandedState
-      onCollapse={vi.fn()}
-    />,
-  );
+  it('renders artwork when artwork is available', () => {
+    renderMedia({
+      artwork:
+        'data:image/jpeg;base64,test-artwork',
+    });
 
-  expect(
-    screen.getByText('♪'),
-  ).toBeInTheDocument();
+    const artwork =
+      screen.getByRole('img');
 
-  expect(
-    screen.getByLabelText('Playing'),
-  ).toBeInTheDocument();
-});
-
-it('shows Unknown artist when artist metadata is empty', () => {
-  mockMediaState({
-    title: 'Test Song',
-    artist: '',
-    artwork: null,
-    is_playing: true,
+    expect(artwork).toHaveAttribute(
+      'src',
+      'data:image/jpeg;base64,test-artwork',
+    );
   });
 
-  render(
-    <ExpandedState
-      onCollapse={vi.fn()}
-    />,
-  );
+  it('shows Unknown artist when artist metadata is empty', () => {
+    renderMedia({
+      artist: '',
+    });
 
-  expect(
-    screen.getByText('Unknown artist'),
-  ).toBeInTheDocument();
-});
-
-it('shows Unknown artist when artist metadata is whitespace', () => {
-  mockMediaState({
-    title: 'Test Song',
-    artist: '   ',
-    artwork: null,
-    is_playing: true,
+    expect(
+      screen.getByText('Unknown artist'),
+    ).toBeInTheDocument();
   });
 
-  render(
-    <ExpandedState
-      onCollapse={vi.fn()}
-    />,
-  );
+  it('shows Unknown artist when artist metadata is whitespace', () => {
+    renderMedia({
+      artist: '   ',
+    });
 
-  expect(
-    screen.getByText('   '),
-  ).not.toBeInTheDocument();
+    expect(
+      screen.getByText('   '),
+    ).not.toBeInTheDocument();
 
-  expect(
-    screen.getByText('Unknown artist'),
-  ).toBeInTheDocument();
-});
-
-it('shows the media-unavailable state when there is no meaningful metadata', () => {
-  mockMediaState({
-    title: '',
-    artist: '',
-    artwork: null,
-    is_playing: false,
+    expect(
+      screen.getByText('Unknown artist'),
+    ).toBeInTheDocument();
   });
 
-  render(
-    <ExpandedState
-      onCollapse={vi.fn()}
-    />,
-  );
+  it('shows the media-unavailable state when media is unavailable', () => {
+    mockedUseMedia.mockReturnValue({
+      media: {
+        ...defaultMedia,
+        title: '',
+        artist: '',
+        artwork: null,
+        is_playing: false,
+      },
+      hasMedia: false,
+    });
 
-  expect(
-    screen.getByText('No active media session'),
-  ).toBeInTheDocument();
+    mockedUseFocusTimer.mockReturnValue(
+      defaultTimerState,
+    );
+
+    render(
+      <ExpandedState
+        onCollapse={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        'No active media session',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the media title exactly as provided', () => {
+    const longTitle =
+      'Where Are U Now (with Justin Bieber) - Extended Deluxe Anniversary Remastered Version';
+
+    renderMedia({
+      title: longTitle,
+    });
+
+    expect(
+      screen.getByText(longTitle),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the artist exactly as provided when present', () => {
+    const longArtist =
+      'Justin Bieber, Skrillex, Diplo, Major Lazer & Very Long Featuring Artist Name';
+
+    renderMedia({
+      artist: longArtist,
+    });
+
+    expect(
+      screen.getByText(longArtist),
+    ).toBeInTheDocument();
+  });
 });
