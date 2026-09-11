@@ -251,7 +251,9 @@ export function ExpandedState({
             </span>
 
             <span className="state-expanded__focus-time">
-              {formatFocusTime(secondsRemaining)}
+              {formatFocusTime(
+                secondsRemaining,
+              )}
             </span>
 
             <div className="state-expanded__focus-progress">
@@ -329,12 +331,12 @@ export function ExpandedState({
 
             <div className="state-expanded__media-text">
               <span className="state-expanded__media-title">
-                {media.title}
+                {media.title.trim() || 'Unknown title'}
               </span>
 
               <span className="state-expanded__media-artist">
-  {media.artist.trim() || 'Unknown artist'}
-</span>
+                {media.artist.trim() || 'Unknown artist'}
+              </span>
             </div>
           </div>
 
@@ -357,11 +359,15 @@ export function ExpandedState({
 
             <div className="state-expanded__progress-times">
               <span>
-                {formatMediaTime(media.position)}
+                {formatMediaTime(
+                  media.position,
+                )}
               </span>
 
               <span>
-                {formatMediaTime(media.duration)}
+                {formatMediaTime(
+                  media.duration,
+                )}
               </span>
             </div>
           </div>
