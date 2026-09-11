@@ -28,8 +28,8 @@ function hasMediaPayload(
   payload: MediaUpdate,
 ): boolean {
   return (
-    payload.title.length > 0 ||
-    payload.artist.length > 0
+    payload.title.trim().length > 0 ||
+    payload.artist.trim().length > 0
   );
 }
 
