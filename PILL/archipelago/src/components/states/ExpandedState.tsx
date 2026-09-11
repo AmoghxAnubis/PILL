@@ -333,8 +333,8 @@ export function ExpandedState({
               </span>
 
               <span className="state-expanded__media-artist">
-                {media.artist || 'Unknown artist'}
-              </span>
+  {media.artist.trim() || 'Unknown artist'}
+</span>
             </div>
           </div>
 
