@@ -251,9 +251,7 @@ export function ExpandedState({
             </span>
 
             <span className="state-expanded__focus-time">
-              {formatFocusTime(
-                secondsRemaining,
-              )}
+              {formatFocusTime(secondsRemaining)}
             </span>
 
             <div className="state-expanded__focus-progress">
@@ -359,15 +357,11 @@ export function ExpandedState({
 
             <div className="state-expanded__progress-times">
               <span>
-                {formatMediaTime(
-                  media.position,
-                )}
+                {formatMediaTime(media.position)}
               </span>
 
               <span>
-                {formatMediaTime(
-                  media.duration,
-                )}
+                {formatMediaTime(media.duration)}
               </span>
             </div>
           </div>
