@@ -21,8 +21,8 @@ export const ISLAND_DIMENSIONS: Record<
   { width: number; height: number }
 > = {
   idle: {
-    width: 110,
-    height: 32,
+    width: 44,
+    height: 14,
   },
   compact: {
     width: 300,
