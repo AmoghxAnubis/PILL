@@ -1,9 +1,8 @@
 /**
- * CompactState — The hover/glance state of the island.
+ * CompactState — The glance state of the island.
  *
- * The widget orchestrator determines which widgets are considered
- * active and their priority. Rendering remains compatible with the
- * existing media, focus timer, and telemetry widgets.
+ * The widget orchestrator determines which widgets are active.
+ * Only the widgets selected by the orchestrator are rendered.
  */
 
 import type { WidgetOrchestration } from '../../lib/widgetOrchestrator';
@@ -39,20 +38,29 @@ export function CompactState({
   const hasOrchestratedWidgets =
     orchestration.layout !== 'none';
 
-  const showFocusTimer = hasOrchestratedWidgets
-    ? orchestratedWidgets.has('focusTimer')
-      ? status !== 'idle'
-      : false
-    : status !== 'idle';
+  const showFocusTimer =
+    hasOrchestratedWidgets
+      ? orchestratedWidgets.has('focusTimer') &&
+        status !== 'idle'
+      : status !== 'idle';
 
-  const showMedia = hasOrchestratedWidgets
-    ? orchestratedWidgets.has('media') && hasMedia
-    : hasMedia;
+  const showMedia =
+    hasOrchestratedWidgets
+      ? orchestratedWidgets.has('media') &&
+        hasMedia
+      : hasMedia;
+
+  const showTelemetry =
+    hasOrchestratedWidgets
+      ? orchestratedWidgets.has('telemetry')
+      : false;
 
   return (
     <div
       className={`state-compact${
-        showMedia ? ' state-compact--media' : ''
+        showMedia
+          ? ' state-compact--media'
+          : ''
       }`}
     >
       <div className="state-compact__indicator">
@@ -72,7 +80,9 @@ export function CompactState({
                 : 'Paused'
             }
           >
-            {media.is_playing ? '▶' : '⏸'}
+            {media.is_playing
+              ? '▶'
+              : '⏸'}
           </span>
 
           <span className="state-compact__media-title">
@@ -85,9 +95,13 @@ export function CompactState({
         </span>
       )}
 
-      {showFocusTimer && <FocusTimer />}
+      {showFocusTimer && (
+        <FocusTimer />
+      )}
 
-      <GlanceMetrics />
+      {showTelemetry && (
+        <GlanceMetrics />
+      )}
     </div>
   );
 }

@@ -4,22 +4,28 @@ import { useWidgetOrchestrator } from './useWidgetOrchestrator';
 import { useIslandState } from './useIslandState';
 import { useIslandStore } from '../store/islandStore';
 
-export function useWidgetLayoutSync() {
-  const { layout } = useWidgetOrchestrator();
+const COLLAPSE_GRACE_PERIOD_MS = 750;
+
+export function useWidgetLayoutSync(): void {
+  const { layout } =
+    useWidgetOrchestrator();
 
   const state = useIslandStore(
     (islandState) => islandState.state,
   );
 
-  const { transitionTo } = useIslandState();
+  const {
+    transitionTo,
+    scheduleCollapse,
+  } = useIslandState();
 
   useEffect(() => {
     /*
-     * Multiple widgets normally use split mode.
+     * Multiple active widgets use split mode.
      *
-     * Expanded is allowed to remain expanded while
-     * multiple widgets are active so hover can reveal
-     * the full dashboard.
+     * If the user is already viewing the expanded
+     * dashboard, leave it expanded. Otherwise reveal
+     * the split presentation automatically.
      */
     if (layout === 'split') {
       if (
@@ -33,30 +39,50 @@ export function useWidgetLayoutSync() {
     }
 
     /*
-     * When leaving split mode, return to compact.
+     * When leaving split mode, any remaining active
+     * widget uses the compact presentation.
      */
     if (state === 'split') {
-      if (layout === 'single') {
-        void transitionTo('compact');
-      } else {
+      if (layout === 'none') {
         void transitionTo('idle');
+      } else {
+        void transitionTo('compact');
       }
 
       return;
     }
 
     /*
-     * If no widgets remain while compact, return to idle.
+     * A single active widget should reveal the
+     * compact pill from the idle notch.
+     */
+    if (
+      state === 'idle' &&
+      layout !== 'none'
+    ) {
+      void transitionTo('compact');
+
+      return;
+    }
+
+    /*
+     * When the last widget disappears, do not collapse
+     * immediately. Give the current event a short grace
+     * period so transient feature changes do not cause
+     * visible flicker.
      */
     if (
       layout === 'none' &&
       state === 'compact'
     ) {
-      void transitionTo('idle');
+      scheduleCollapse(
+        COLLAPSE_GRACE_PERIOD_MS,
+      );
     }
   }, [
     layout,
     state,
     transitionTo,
+    scheduleCollapse,
   ]);
 }
