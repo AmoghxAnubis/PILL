@@ -33,7 +33,9 @@ describe('useIslandState', () => {
   });
 
   it('transitions from idle to expanded on mouse enter', async () => {
-    const { result } = renderHook(() => useIslandState());
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
 
     await act(async () => {
       result.current.handleMouseEnter();
@@ -64,7 +66,9 @@ describe('useIslandState', () => {
       state: 'compact',
     });
 
-    const { result } = renderHook(() => useIslandState());
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
 
     await act(async () => {
       result.current.handleMouseEnter();
@@ -95,7 +99,9 @@ describe('useIslandState', () => {
       state: 'compact',
     });
 
-    const { result } = renderHook(() => useIslandState());
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
 
     await act(async () => {
       result.current.handleMouseLeave();
@@ -108,8 +114,8 @@ describe('useIslandState', () => {
     expect(invoke).toHaveBeenCalledWith(
       'resize_island',
       {
-        width: 110,
-        height: 32,
+        width: 44,
+        height: 14,
       },
     );
 
@@ -126,7 +132,9 @@ describe('useIslandState', () => {
       state: 'compact',
     });
 
-    const { result } = renderHook(() => useIslandState());
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
 
     await act(async () => {
       result.current.handleClick();
@@ -157,7 +165,9 @@ describe('useIslandState', () => {
       state: 'expanded',
     });
 
-    const { result } = renderHook(() => useIslandState());
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
 
     await act(async () => {
       result.current.handleCollapse();
@@ -170,8 +180,8 @@ describe('useIslandState', () => {
     expect(invoke).toHaveBeenCalledWith(
       'resize_island',
       {
-        width: 110,
-        height: 32,
+        width: 44,
+        height: 14,
       },
     );
 
@@ -188,7 +198,9 @@ describe('useIslandState', () => {
       state: 'split',
     });
 
-    const { result } = renderHook(() => useIslandState());
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
 
     await act(async () => {
       result.current.handleCollapse();
@@ -202,10 +214,14 @@ describe('useIslandState', () => {
   });
 
   it('transitions to split with the correct native dimensions', async () => {
-    const { result } = renderHook(() => useIslandState());
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
 
     await act(async () => {
-      await result.current.transitionTo('split');
+      await result.current.transitionTo(
+        'split',
+      );
     });
 
     expect(
@@ -240,10 +256,14 @@ describe('useIslandState', () => {
       state: 'split',
     });
 
-    const { result } = renderHook(() => useIslandState());
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
 
     await act(async () => {
-      await result.current.transitionTo('split');
+      await result.current.transitionTo(
+        'split',
+      );
     });
 
     expect(
@@ -260,7 +280,9 @@ describe('useIslandState', () => {
       state: 'expanded',
     });
 
-    const { result } = renderHook(() => useIslandState());
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
 
     act(() => {
       result.current.scheduleCollapse(1000);
@@ -286,14 +308,18 @@ describe('useIslandState', () => {
       state: 'expanded',
     });
 
-    const { result } = renderHook(() => useIslandState());
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
 
     act(() => {
       result.current.scheduleCollapse(1000);
     });
 
     await act(async () => {
-      await result.current.transitionTo('compact');
+      await result.current.transitionTo(
+        'compact',
+      );
     });
 
     await act(async () => {
