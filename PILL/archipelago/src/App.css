@@ -33,8 +33,9 @@ body,
 
 /* ---- State Component Styles ---- */
 
-/* Idle */
-
+/* ========================================
+   Idle
+   ======================================== */
 
 .state-idle {
   display: flex;
@@ -64,20 +65,29 @@ body,
     0 0 10px rgba(255, 255, 255, 0.12);
 }
 
-/* Compact */
+/* ========================================
+   Compact
+   ======================================== */
 
 .state-compact {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   width: 100%;
   height: 100%;
-  padding: 0 10px;
+  padding: 0 11px;
+
+  min-width: 0;
+
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
 
 .state-compact__indicator {
   display: flex;
   align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
 }
 
@@ -86,12 +96,100 @@ body,
   height: 7px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.3);
+
+  transition:
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
 .state-compact__dot--active {
   background: #34d399;
-  box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+  box-shadow:
+    0 0 8px rgba(52, 211, 153, 0.5);
 }
+
+/* ========================================
+   Compact — Media
+   ======================================== */
+
+.state-compact--media {
+  gap: 7px;
+}
+
+.state-compact--media .state-compact__dot--active {
+  background: #34d399;
+  box-shadow:
+    0 0 8px rgba(52, 211, 153, 0.5);
+}
+
+.state-compact--media:hover
+  .state-compact__dot--active {
+  transform: scale(1.12);
+  box-shadow:
+    0 0 10px rgba(52, 211, 153, 0.65);
+}
+
+/* ========================================
+   Compact — Focus
+   ======================================== */
+
+.state-compact--focus {
+  gap: 8px;
+}
+
+.state-compact--focus .state-compact__dot--active {
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 0 7px rgba(255, 255, 255, 0.2);
+}
+
+.state-compact--focus .focus-timer {
+  margin-left: 1px;
+}
+
+.state-compact--focus .focus-timer__display {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* ========================================
+   Compact — Telemetry
+   ======================================== */
+
+.state-compact--telemetry {
+  gap: 7px;
+}
+
+.state-compact--telemetry .state-compact__dot--active {
+  background: #ff6b6b;
+  box-shadow:
+    0 0 8px rgba(255, 107, 107, 0.45);
+  animation: telemetry-pulse 1.8s ease-in-out infinite;
+}
+
+.state-compact--telemetry
+  .glance-metrics {
+  margin-left: 1px;
+  font-weight: 600;
+}
+
+@keyframes telemetry-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+
+/* ========================================
+   Compact — Default Label
+   ======================================== */
 
 .state-compact__label {
   min-width: 0;
@@ -105,7 +203,9 @@ body,
   flex: 1 1 auto;
 }
 
-/* Expanded */
+/* ========================================
+   Expanded
+   ======================================== */
 
 .state-expanded {
   display: flex;
@@ -228,9 +328,9 @@ body,
   font-style: italic;
 }
 
-/* Split */
-
-/* Split */
+/* ========================================
+   Split
+   ======================================== */
 
 .state-split {
   display: flex;
@@ -362,7 +462,9 @@ body,
   font-size: 9px;
 }
 
-/* ---- Compact Media ---- */
+/* ========================================
+   Compact Media
+   ======================================== */
 
 .state-compact__media {
   display: flex;
@@ -377,18 +479,31 @@ body,
   flex: 0 0 auto;
   font-size: 8px;
   opacity: 0.85;
+
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.state-compact--media:hover
+  .state-compact__media-icon {
+  opacity: 1;
+  transform: scale(1.08);
 }
 
 .state-compact__media-title {
   min-width: 0;
-  max-width: 115px;
+  max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 11px;
+  color: rgba(255, 255, 255, 0.92);
 }
 
-/* ---- Compact Focus Timer ---- */
+/* ========================================
+   Compact Focus Timer
+   ======================================== */
 
 .state-compact .focus-timer {
   flex: 0 1 auto;
@@ -410,7 +525,9 @@ body,
   font-size: 8px;
 }
 
-/* ---- Compact Telemetry ---- */
+/* ========================================
+   Compact Telemetry
+   ======================================== */
 
 .glance-metrics {
   display: flex;
@@ -445,9 +562,13 @@ body,
 
 .glance-metrics--warning {
   color: #ff6b6b;
+  text-shadow:
+    0 0 8px rgba(255, 107, 107, 0.15);
 }
 
-/* ---- Expanded Media ---- */
+/* ========================================
+   Expanded Media
+   ======================================== */
 
 .state-expanded__media {
   flex: 1;
@@ -566,7 +687,9 @@ body,
   transform: scale(0.94);
 }
 
-/* ---- Expanded Media Progress ---- */
+/* ========================================
+   Expanded Media Progress
+   ======================================== */
 
 .state-expanded__progress {
   display: flex;
@@ -620,7 +743,9 @@ body,
   font-size: 16px;
 }
 
-/* ---- Focus Timer ---- */
+/* ========================================
+   Focus Timer
+   ======================================== */
 
 .focus-timer {
   display: flex;
@@ -693,7 +818,9 @@ body,
   opacity: 0.6;
 }
 
-/* ---- Expanded Focus Timer ---- */
+/* ========================================
+   Expanded Focus Timer
+   ======================================== */
 
 .state-expanded__focus-timer {
   flex: 1;
