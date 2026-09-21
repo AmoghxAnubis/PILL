@@ -1,8 +1,9 @@
 /**
  * CompactState — The glance state of the island.
  *
- * The widget orchestrator determines which widgets are active.
- * Only the widgets selected by the orchestrator are rendered.
+ * The widget orchestrator determines which widget is active.
+ * CompactState renders the primary widget selected by the
+ * orchestrator and keeps the presentation intentionally minimal.
  */
 
 import type { WidgetOrchestration } from '../../lib/widgetOrchestrator';
@@ -17,6 +18,12 @@ interface CompactStateProps {
   widgetOrchestration?: WidgetOrchestration;
 }
 
+const EMPTY_ORCHESTRATION: WidgetOrchestration = {
+  layout: 'none',
+  primary: null,
+  secondary: null,
+};
+
 export function CompactState({
   widgetOrchestration,
 }: CompactStateProps) {
@@ -24,50 +31,65 @@ export function CompactState({
   const { status } = useFocusTimer();
 
   const orchestration =
-    widgetOrchestration ?? {
-      layout: 'none' as const,
-      primary: null,
-      secondary: null,
-    };
-
-  const orchestratedWidgets = new Set([
-    orchestration.primary,
-    orchestration.secondary,
-  ]);
+    widgetOrchestration ??
+    EMPTY_ORCHESTRATION;
 
   const hasOrchestratedWidgets =
     orchestration.layout !== 'none';
 
-  const showFocusTimer =
+  /*
+   * When orchestration is active, the primary widget
+   * decides what the compact pill should present.
+   *
+   * This prevents telemetry, media, and focus content
+   * from appearing simultaneously in an otherwise
+   * single-widget presentation.
+   */
+  const primaryWidget =
     hasOrchestratedWidgets
-      ? orchestratedWidgets.has('focusTimer') &&
-        status !== 'idle'
-      : status !== 'idle';
+      ? orchestration.primary
+      : hasMedia
+        ? 'media'
+        : status !== 'idle'
+          ? 'focusTimer'
+          : null;
 
   const showMedia =
-    hasOrchestratedWidgets
-      ? orchestratedWidgets.has('media') &&
-        hasMedia
-      : hasMedia;
+    primaryWidget === 'media' &&
+    hasMedia;
+
+  const showFocusTimer =
+    primaryWidget === 'focusTimer' &&
+    status !== 'idle';
 
   const showTelemetry =
-    hasOrchestratedWidgets
-      ? orchestratedWidgets.has('telemetry')
-      : false;
+    primaryWidget === 'telemetry';
+
+  const compactClassName = [
+    'state-compact',
+    showMedia
+      ? 'state-compact--media'
+      : '',
+    showFocusTimer
+      ? 'state-compact--focus'
+      : '',
+    showTelemetry
+      ? 'state-compact--telemetry'
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div
-      className={`state-compact${
-        showMedia
-          ? ' state-compact--media'
-          : ''
-      }`}
+      className={compactClassName}
+      data-widget={primaryWidget ?? 'none'}
     >
       <div className="state-compact__indicator">
         <div className="state-compact__dot state-compact__dot--active" />
       </div>
 
-      {showMedia ? (
+      {showMedia && (
         <div
           className="state-compact__media"
           title={`${media.title} — ${media.artist}`}
@@ -89,19 +111,25 @@ export function CompactState({
             {media.title}
           </span>
         </div>
-      ) : (
-        <span className="state-compact__label">
-          Archipelago
-        </span>
       )}
 
       {showFocusTimer && (
-        <FocusTimer />
+        <div className="state-compact__focus">
+          <FocusTimer />
+        </div>
       )}
 
       {showTelemetry && (
         <GlanceMetrics />
       )}
+
+      {!showMedia &&
+        !showFocusTimer &&
+        !showTelemetry && (
+          <span className="state-compact__label">
+            Archipelago
+          </span>
+        )}
     </div>
   );
 }
