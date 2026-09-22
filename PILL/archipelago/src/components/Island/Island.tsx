@@ -16,6 +16,7 @@ import { useEvasion } from '../../hooks/useEvasion';
 import { useFeatureCoordinator } from '../../hooks/useFeatureCoordinator';
 import { useFeatureSources } from '../../hooks/useFeatureSources';
 import { useIslandState } from '../../hooks/useIslandState';
+import { useSettingsSource } from '../../hooks/useSettingsSource';
 import { useWidgetLayoutSync } from '../../hooks/useWidgetLayoutSync';
 import { useWidgetOrchestrator } from '../../hooks/useWidgetOrchestrator';
 
@@ -43,6 +44,7 @@ export function Island() {
   useEvasion();
   useFeatureSources();
   useFeatureCoordinator();
+  useSettingsSource();
   useWidgetLayoutSync();
 
   const {
