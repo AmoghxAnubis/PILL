@@ -1,10 +1,19 @@
-import { useMemo, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import {
   DEFAULT_PILL_SETTINGS,
   type PillSettings,
   type ThemeMode,
 } from '../../shared/settings/PillSettings';
+
+import {
+  loadSettings,
+  saveSettings,
+} from './lib/settingsApi';
 
 import './App.css';
 
@@ -42,6 +51,7 @@ function SettingToggle({
         <div className="setting-row__label">
           {label}
         </div>
+
         <div className="setting-row__description">
           {description}
         </div>
@@ -78,7 +88,10 @@ function SectionIcon({
   };
 
   return (
-    <span className="nav-item__icon" aria-hidden="true">
+    <span
+      className="nav-item__icon"
+      aria-hidden="true"
+    >
       {icons[section]}
     </span>
   );
@@ -93,6 +106,40 @@ function App() {
       DEFAULT_PILL_SETTINGS,
     );
 
+  const [settingsLoaded, setSettingsLoaded] =
+    useState(false);
+
+  const [saveStatus, setSaveStatus] =
+    useState<
+      'idle' | 'saving' | 'saved' | 'error'
+    >('idle');
+
+  /*
+   * Load the persisted settings when PILL Control
+   * starts.
+   *
+   * Until loading completes, update handlers are
+   * guarded so a user cannot accidentally overwrite
+   * the persisted configuration with the defaults.
+   */
+  useEffect(() => {
+    let mounted = true;
+
+    void loadSettings().then((loadedSettings) => {
+      if (!mounted) {
+        return;
+      }
+
+      setSettings(loadedSettings);
+      setSettingsLoaded(true);
+      setSaveStatus('saved');
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const enabledWidgetCount = useMemo(
     () =>
       Object.values(settings.widgets).filter(
@@ -101,28 +148,64 @@ function App() {
     [settings.widgets],
   );
 
+  /*
+   * Update local state immediately, then persist the
+   * exact same settings object through the Tauri API.
+   */
+  const commitSettings = (
+    nextSettings: PillSettings,
+  ) => {
+    setSettings(nextSettings);
+    setSaveStatus('saving');
+
+    void saveSettings(nextSettings)
+      .then(() => {
+        setSaveStatus('saved');
+      })
+      .catch((error) => {
+        console.error(
+          '[PILL Control] Failed to save settings:',
+          error,
+        );
+
+        setSaveStatus('error');
+      });
+  };
+
   const updateWidgets = (
     updates: Partial<PillSettings['widgets']>,
   ) => {
-    setSettings((current) => ({
-      ...current,
+    if (!settingsLoaded) {
+      return;
+    }
+
+    const nextSettings: PillSettings = {
+      ...settings,
       widgets: {
-        ...current.widgets,
+        ...settings.widgets,
         ...updates,
       },
-    }));
+    };
+
+    commitSettings(nextSettings);
   };
 
   const updateBehavior = (
     updates: Partial<PillSettings['behavior']>,
   ) => {
-    setSettings((current) => ({
-      ...current,
+    if (!settingsLoaded) {
+      return;
+    }
+
+    const nextSettings: PillSettings = {
+      ...settings,
       behavior: {
-        ...current.behavior,
+        ...settings.behavior,
         ...updates,
       },
-    }));
+    };
+
+    commitSettings(nextSettings);
   };
 
   const updateAppearance = (
@@ -130,29 +213,47 @@ function App() {
       PillSettings['appearance']
     >,
   ) => {
-    setSettings((current) => ({
-      ...current,
+    if (!settingsLoaded) {
+      return;
+    }
+
+    const nextSettings: PillSettings = {
+      ...settings,
       appearance: {
-        ...current.appearance,
+        ...settings.appearance,
         ...updates,
       },
-    }));
+    };
+
+    commitSettings(nextSettings);
   };
 
   const updateSystem = (
     updates: Partial<PillSettings['system']>,
   ) => {
-    setSettings((current) => ({
-      ...current,
+    if (!settingsLoaded) {
+      return;
+    }
+
+    const nextSettings: PillSettings = {
+      ...settings,
       system: {
-        ...current.system,
+        ...settings.system,
         ...updates,
       },
-    }));
+    };
+
+    commitSettings(nextSettings);
   };
 
   const resetSettings = () => {
-    setSettings(DEFAULT_PILL_SETTINGS);
+    if (!settingsLoaded) {
+      return;
+    }
+
+    commitSettings(
+      DEFAULT_PILL_SETTINGS,
+    );
   };
 
   const renderOverview = () => (
@@ -161,7 +262,9 @@ function App() {
         <span className="page-heading__eyebrow">
           CONTROL CENTER
         </span>
+
         <h1>PILL at a glance</h1>
+
         <p>
           Configure what PILL shows and how it
           behaves.
@@ -171,10 +274,12 @@ function App() {
       <div className="overview-status">
         <div className="status-card">
           <div className="status-card__indicator status-card__indicator--active" />
+
           <div>
             <div className="status-card__label">
               Configuration
             </div>
+
             <div className="status-card__value">
               Local settings
             </div>
@@ -183,10 +288,12 @@ function App() {
 
         <div className="status-card">
           <div className="status-card__indicator" />
+
           <div>
             <div className="status-card__label">
               Widgets enabled
             </div>
+
             <div className="status-card__value">
               {enabledWidgetCount} / 3
             </div>
@@ -198,6 +305,7 @@ function App() {
         <div className="section-header">
           <div>
             <h2>Active widgets</h2>
+
             <p>
               Choose which experiences PILL is
               allowed to surface.
@@ -226,9 +334,11 @@ function App() {
             <span className="summary-card__icon">
               ▶
             </span>
+
             <span className="summary-card__name">
               Media
             </span>
+
             <span className="summary-card__state">
               {settings.widgets.media
                 ? 'Enabled'
@@ -246,9 +356,11 @@ function App() {
             <span className="summary-card__icon">
               ◌
             </span>
+
             <span className="summary-card__name">
               Telemetry
             </span>
+
             <span className="summary-card__state">
               {settings.widgets.telemetry
                 ? 'Enabled'
@@ -266,9 +378,11 @@ function App() {
             <span className="summary-card__icon">
               ◷
             </span>
+
             <span className="summary-card__name">
               Focus Timer
             </span>
+
             <span className="summary-card__state">
               {settings.widgets.focusTimer
                 ? 'Enabled'
@@ -282,6 +396,7 @@ function App() {
         <div className="section-header">
           <div>
             <h2>Behavior</h2>
+
             <p>
               Control how PILL reveals and hides
               itself.
@@ -302,6 +417,7 @@ function App() {
         <div className="mini-settings">
           <div className="mini-setting">
             <span>Hover to expand</span>
+
             <span
               className={`mini-setting__value ${
                 settings.behavior.hoverToExpand
@@ -317,6 +433,7 @@ function App() {
 
           <div className="mini-setting">
             <span>Fullscreen evasion</span>
+
             <span
               className={`mini-setting__value ${
                 settings.behavior
@@ -342,7 +459,9 @@ function App() {
         <span className="page-heading__eyebrow">
           WIDGETS
         </span>
+
         <h1>Choose what PILL shows</h1>
+
         <p>
           Disabled widgets are excluded from PILL's
           active widget orchestration.
@@ -390,11 +509,10 @@ function App() {
         <span className="info-banner__icon">
           i
         </span>
+
         <span>
-          These changes currently live inside PILL
-          Control only. Persistent storage and live
-          synchronization with PILL are the next
-          integration step.
+          Changes are saved automatically to your
+          local PILL configuration.
         </span>
       </div>
     </div>
@@ -406,7 +524,9 @@ function App() {
         <span className="page-heading__eyebrow">
           BEHAVIOR
         </span>
+
         <h1>Control PILL's behavior</h1>
+
         <p>
           Decide how PILL reacts to interaction and
           fullscreen applications.
@@ -415,7 +535,9 @@ function App() {
 
       <div className="settings-card">
         <SettingToggle
-          checked={settings.behavior.hoverToExpand}
+          checked={
+            settings.behavior.hoverToExpand
+          }
           onChange={() =>
             updateBehavior({
               hoverToExpand:
@@ -428,7 +550,9 @@ function App() {
         />
 
         <SettingToggle
-          checked={settings.behavior.clickToExpand}
+          checked={
+            settings.behavior.clickToExpand
+          }
           onChange={() =>
             updateBehavior({
               clickToExpand:
@@ -441,7 +565,9 @@ function App() {
         />
 
         <SettingToggle
-          checked={settings.behavior.autoCollapse}
+          checked={
+            settings.behavior.autoCollapse
+          }
           onChange={() =>
             updateBehavior({
               autoCollapse:
@@ -454,7 +580,10 @@ function App() {
         />
 
         <SettingToggle
-          checked={settings.behavior.fullscreenEvasion}
+          checked={
+            settings.behavior
+              .fullscreenEvasion
+          }
           onChange={() =>
             updateBehavior({
               fullscreenEvasion:
@@ -472,6 +601,7 @@ function App() {
               <div className="setting-row__label">
                 Collapse delay
               </div>
+
               <div className="setting-row__description">
                 Delay before an inactive compact
                 pill collapses.
@@ -512,7 +642,9 @@ function App() {
         <span className="page-heading__eyebrow">
           APPEARANCE
         </span>
+
         <h1>Shape the experience</h1>
+
         <p>
           Configure the visual behavior of PILL.
         </p>
@@ -524,6 +656,7 @@ function App() {
             <div className="setting-row__label">
               Theme
             </div>
+
             <div className="setting-row__description">
               Select the visual theme used by PILL.
             </div>
@@ -546,7 +679,9 @@ function App() {
         </div>
 
         <SettingToggle
-          checked={settings.appearance.animations}
+          checked={
+            settings.appearance.animations
+          }
           onChange={() =>
             updateAppearance({
               animations:
@@ -567,7 +702,9 @@ function App() {
         <span className="page-heading__eyebrow">
           SYSTEM
         </span>
+
         <h1>System preferences</h1>
+
         <p>
           Configure how PILL behaves with Windows.
         </p>
@@ -575,7 +712,9 @@ function App() {
 
       <div className="settings-card">
         <SettingToggle
-          checked={settings.system.launchAtStartup}
+          checked={
+            settings.system.launchAtStartup
+          }
           onChange={() =>
             updateSystem({
               launchAtStartup:
@@ -588,7 +727,9 @@ function App() {
         />
 
         <SettingToggle
-          checked={settings.system.minimizeToTray}
+          checked={
+            settings.system.minimizeToTray
+          }
           onChange={() =>
             updateSystem({
               minimizeToTray:
@@ -606,6 +747,7 @@ function App() {
           <div className="setting-row__label">
             Reset settings
           </div>
+
           <div className="setting-row__description">
             Restore the original PILL preferences.
           </div>
@@ -656,6 +798,7 @@ function App() {
             <div className="brand__name">
               PILL
             </div>
+
             <div className="brand__subtitle">
               Control
             </div>
@@ -683,6 +826,7 @@ function App() {
               }
             >
               <SectionIcon section={section} />
+
               <span>
                 {SECTION_LABELS[section]}
               </span>
@@ -697,6 +841,7 @@ function App() {
             <div className="sidebar__footer-title">
               PILL Control
             </div>
+
             <div className="sidebar__footer-text">
               Configuration workspace
             </div>
@@ -713,8 +858,21 @@ function App() {
           </div>
 
           <div className="topbar__status">
-            <span className="topbar__status-dot" />
-            Local configuration
+            <span
+              className={`topbar__status-dot ${
+                saveStatus === 'error'
+                  ? 'topbar__status-dot--error'
+                  : ''
+              }`}
+            />
+
+            {!settingsLoaded
+              ? 'Loading settings'
+              : saveStatus === 'saving'
+                ? 'Saving'
+                : saveStatus === 'error'
+                  ? 'Save failed'
+                  : 'Saved locally'}
           </div>
         </header>
 

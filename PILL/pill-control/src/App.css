@@ -647,3 +647,7 @@ button {
     grid-template-columns: 1fr;
   }
 }
+.topbar__status-dot--error {
+  background: var(--danger);
+  box-shadow: 0 0 8px rgba(255, 114, 114, 0.28);
+}
