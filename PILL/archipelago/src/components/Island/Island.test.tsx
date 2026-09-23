@@ -51,6 +51,10 @@ vi.mock('../../hooks/useWidgetOrchestrator', () => ({
   useWidgetOrchestrator: vi.fn(),
 }));
 
+vi.mock('../../hooks/useSettingsSource', () => ({
+  useSettingsSource: vi.fn(),
+}));
+
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn().mockResolvedValue(undefined),
 }));
