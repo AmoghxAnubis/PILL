@@ -1,10 +1,8 @@
 use serde::{Deserialize, Serialize};
-use std::{
-    env,
-    fs,
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::fs;
+use std::path::PathBuf;
+use std::sync::atomic::Ordering;
+use std::time::Duration;
 
 use tauri::{AppHandle, Emitter};
 
@@ -94,11 +92,16 @@ impl Default for PillSettings {
     }
 }
 
-fn app_data_root() -> Result<PathBuf, String> {
+fn settings_file_path() -> Result<PathBuf, String> {
     #[cfg(target_os = "windows")]
     {
-        env::var_os("APPDATA")
+        std::env::var_os("APPDATA")
             .map(PathBuf::from)
+            .map(|app_data| {
+                app_data
+                    .join(SETTINGS_DIRECTORY_NAME)
+                    .join(SETTINGS_FILE_NAME)
+            })
             .ok_or_else(|| {
                 "APPDATA environment variable is not available"
                     .to_string()
@@ -107,42 +110,17 @@ fn app_data_root() -> Result<PathBuf, String> {
 
     #[cfg(not(target_os = "windows"))]
     {
-        env::var_os("HOME")
+        std::env::var_os("HOME")
             .map(PathBuf::from)
-            .map(|home| home.join(".config"))
+            .map(|home| {
+                home.join(".config")
+                    .join(SETTINGS_DIRECTORY_NAME)
+                    .join(SETTINGS_FILE_NAME)
+            })
             .ok_or_else(|| {
                 "HOME environment variable is not available"
                     .to_string()
             })
-    }
-}
-
-fn settings_file_path() -> Result<PathBuf, String> {
-    Ok(app_data_root()?
-        .join(SETTINGS_DIRECTORY_NAME)
-        .join(SETTINGS_FILE_NAME))
-}
-
-fn read_settings_file() -> Result<PillSettings, String> {
-    let path = settings_file_path()?;
-
-    if !path.exists() {
-        return Ok(PillSettings::default());
-    }
-
-    let contents = fs::read_to_string(&path).map_err(|error| {
-        format!(
-            "Failed to read settings file {}: {error}",
-            path.display()
-        )
-    })?;
-
-    match serde_json::from_str::<PillSettings>(&contents) {
-        Ok(settings) if settings.version == 1 => {
-            Ok(settings)
-        }
-        Ok(_) => Ok(PillSettings::default()),
-        Err(_) => Ok(PillSettings::default()),
     }
 }
 
@@ -163,34 +141,59 @@ fn read_settings_contents() -> Result<Option<String>, String> {
         })
 }
 
-#[tauri::command]
-pub fn load_settings() -> Result<PillSettings, String> {
-    read_settings_file()
+fn parse_settings(
+    contents: &str,
+) -> Option<PillSettings> {
+    match serde_json::from_str::<PillSettings>(contents) {
+        Ok(settings) if settings.version == 1 => {
+            Some(settings)
+        }
+        _ => None,
+    }
 }
 
-/// Watches the shared settings file and emits a Tauri event whenever
-/// a new valid settings document is detected.
-///
-/// Invalid or partially written JSON is ignored instead of replacing
-/// the current runtime configuration with defaults.
-pub fn spawn_settings_monitor(app: AppHandle) {
-    tauri::async_runtime::spawn(async move {
-        let mut last_contents = read_settings_contents()
-            .ok()
-            .flatten();
+#[tauri::command]
+pub fn load_settings() -> Result<PillSettings, String> {
+    let Some(contents) = read_settings_contents()?
+    else {
+        return Ok(PillSettings::default());
+    };
 
-        let mut interval = tokio::time::interval(
-            Duration::from_millis(
+    Ok(
+        parse_settings(&contents)
+            .unwrap_or_default(),
+    )
+}
+
+pub fn spawn_settings_monitor(
+    app: AppHandle,
+) {
+    tauri::async_runtime::spawn(async move {
+        let mut last_contents =
+            match read_settings_contents() {
+                Ok(contents) => contents,
+                Err(error) => {
+                    eprintln!(
+                        "[Archipelago][Settings] {error}"
+                    );
+                    None
+                }
+            };
+
+        let mut interval =
+            tokio::time::interval(Duration::from_millis(
                 SETTINGS_POLL_INTERVAL_MS,
-            ),
-        );
+            ));
 
         interval.tick().await;
 
         loop {
             if crate::SHUTDOWN_REQUESTED.load(
-                std::sync::atomic::Ordering::SeqCst,
+                Ordering::SeqCst,
             ) {
+                println!(
+                    "[Archipelago][Settings] Monitor stopped"
+                );
                 break;
             }
 
@@ -211,23 +214,28 @@ pub fn spawn_settings_monitor(app: AppHandle) {
                 continue;
             }
 
-            let Some(contents) = current_contents.as_ref()
+            let Some(contents) =
+                current_contents.as_deref()
             else {
+                /*
+                 * A missing file is not treated as a live
+                 * settings reset. This avoids changing
+                 * runtime settings during a transient file
+                 * replacement.
+                 */
                 continue;
             };
 
-            let parsed =
-                serde_json::from_str::<PillSettings>(
-                    contents,
-                );
-
-            let Ok(settings) = parsed else {
+            let Some(settings) =
+                parse_settings(contents)
+            else {
+                /*
+                 * Ignore incomplete/invalid JSON. The
+                 * Control application may briefly expose a
+                 * partially-written file while updating it.
+                 */
                 continue;
             };
-
-            if settings.version != 1 {
-                continue;
-            }
 
             match app.emit(
                 SETTINGS_CHANGED,
@@ -236,7 +244,12 @@ pub fn spawn_settings_monitor(app: AppHandle) {
                 Ok(()) => {
                     last_contents =
                         current_contents;
+
+                    println!(
+                        "[Archipelago][Settings] Settings changed"
+                    );
                 }
+
                 Err(error) => {
                     eprintln!(
                         "[Archipelago][Settings] Failed to emit settings change: {error}"
@@ -244,10 +257,6 @@ pub fn spawn_settings_monitor(app: AppHandle) {
                 }
             }
         }
-
-        println!(
-            "[Archipelago][Settings] Monitor stopped"
-        );
     });
 }
 
@@ -256,13 +265,50 @@ mod tests {
     use super::*;
 
     #[test]
-    fn default_settings_are_enabled() {
-        let settings = PillSettings::default();
+    fn defaults_enable_all_widgets() {
+        let settings =
+            PillSettings::default();
 
-        assert_eq!(settings.version, 1);
-        assert!(settings.widgets.media);
-        assert!(settings.widgets.telemetry);
-        assert!(settings.widgets.focus_timer);
+        assert_eq!(
+            settings.version,
+            1
+        );
+
+        assert!(
+            settings.widgets.media
+        );
+
+        assert!(
+            settings.widgets.telemetry
+        );
+
+        assert!(
+            settings.widgets.focus_timer
+        );
+    }
+
+    #[test]
+    fn telemetry_can_be_disabled() {
+        let settings = PillSettings {
+            widgets: WidgetSettings {
+                media: true,
+                telemetry: false,
+                focus_timer: true,
+            },
+            ..PillSettings::default()
+        };
+
+        assert!(
+            settings.widgets.media
+        );
+
+        assert!(
+            !settings.widgets.telemetry
+        );
+
+        assert!(
+            settings.widgets.focus_timer
+        );
     }
 
     #[test]
@@ -273,24 +319,40 @@ mod tests {
                 telemetry: false,
                 focus_timer: true,
             },
-            ..PillSettings::default()
+            behavior: BehaviorSettings {
+                hover_to_expand: false,
+                click_to_expand: true,
+                auto_collapse: true,
+                collapse_delay_ms: 1200,
+                fullscreen_evasion: false,
+            },
+            appearance: AppearanceSettings {
+                theme: ThemeMode::Light,
+                animations: false,
+            },
+            system: SystemSettings {
+                launch_at_startup: true,
+                minimize_to_tray: false,
+            },
+            version: 1,
         };
 
-        let serialized =
+        let json =
             serde_json::to_string(&settings)
                 .unwrap();
 
         let restored: PillSettings =
-            serde_json::from_str(
-                &serialized,
-            )
-            .unwrap();
+            serde_json::from_str(&json)
+                .unwrap();
 
-        assert_eq!(restored, settings);
+        assert_eq!(
+            restored,
+            settings
+        );
     }
 
     #[test]
-    fn serialized_widget_keys_match_shared_contract() {
+    fn serialized_keys_match_control_contract() {
         let settings =
             PillSettings::default();
 
@@ -298,41 +360,67 @@ mod tests {
             serde_json::to_value(settings)
                 .unwrap();
 
-        let widgets =
-            value.get("widgets").unwrap();
-
-        assert!(
-            widgets.get("focusTimer").is_some()
+        assert_eq!(
+            value["widgets"]["focusTimer"],
+            true
         );
 
-        assert!(
-            widgets.get("telemetry").is_some()
+        assert_eq!(
+            value["widgets"]["telemetry"],
+            true
+        );
+
+        assert_eq!(
+            value["behavior"]["collapseDelayMs"],
+            750
+        );
+
+        assert_eq!(
+            value["system"]["launchAtStartup"],
+            false
         );
     }
 
     #[test]
-    fn unsupported_version_is_rejected_by_validation() {
+    fn invalid_json_is_rejected() {
+        assert!(
+            parse_settings(
+                "{ definitely not valid json }"
+            )
+            .is_none()
+        );
+    }
+
+    #[test]
+    fn unsupported_version_is_rejected() {
         let mut settings =
             PillSettings::default();
 
         settings.version = 2;
 
-        assert_ne!(settings.version, 1);
+        let json =
+            serde_json::to_string(&settings)
+                .unwrap();
+
+        assert!(
+            parse_settings(&json)
+                .is_none()
+        );
     }
 
     #[test]
-    fn path_builder_uses_shared_pill_directory() {
-        let path = PathBuf::from(
-            "C:\\Users\\Test\\AppData\\PILL\\settings.json",
+    fn empty_file_is_rejected() {
+        assert!(
+            parse_settings("")
+                .is_none()
         );
+    }
 
-        let parent = path.parent().unwrap();
-
-        assert_eq!(
-            parent,
-            Path::new(
-                "C:\\Users\\Test\\AppData\\PILL"
-            )
+    #[test]
+    fn whitespace_file_is_rejected() {
+        assert!(
+            parse_settings("   ")
+                .is_none()
         );
     }
 }
