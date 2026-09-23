@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
+
 use tauri::{
     AppHandle,
     Emitter,
@@ -13,6 +14,7 @@ pub mod evasion;
 pub mod focus_timer;
 pub mod media;
 pub mod telemetry;
+pub mod settings;
 
 mod hwnd_controller;
 
@@ -24,7 +26,15 @@ pub static SHUTDOWN_REQUESTED: AtomicBool =
     AtomicBool::new(false);
 
 /// Represents the current island UI state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+)]
 pub enum IslandState {
     Idle,
     Compact,
@@ -33,7 +43,13 @@ pub enum IslandState {
 }
 
 /// Represents the calculated physical position of the island window.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+)]
 struct WindowPosition {
     x: i32,
     y: i32,
@@ -104,7 +120,12 @@ fn resize_island(
     );
 
     window
-        .set_size(tauri::LogicalSize::new(width, height))
+        .set_size(
+            tauri::LogicalSize::new(
+                width,
+                height,
+            ),
+        )
         .map_err(|e| e.to_string())?;
 
     window
@@ -181,12 +202,15 @@ fn start_focus_timer(
 > {
     let snapshot = timer.start();
 
-    app.emit(events::TIMER_TICK, snapshot)
-        .map_err(|error| {
-            format!(
-                "Failed to emit timer update: {error}"
-            )
-        })?;
+    app.emit(
+        events::TIMER_TICK,
+        snapshot,
+    )
+    .map_err(|error| {
+        format!(
+            "Failed to emit timer update: {error}"
+        )
+    })?;
 
     Ok(snapshot)
 }
@@ -202,12 +226,15 @@ fn pause_focus_timer(
 > {
     let snapshot = timer.pause();
 
-    app.emit(events::TIMER_TICK, snapshot)
-        .map_err(|error| {
-            format!(
-                "Failed to emit timer update: {error}"
-            )
-        })?;
+    app.emit(
+        events::TIMER_TICK,
+        snapshot,
+    )
+    .map_err(|error| {
+        format!(
+            "Failed to emit timer update: {error}"
+        )
+    })?;
 
     Ok(snapshot)
 }
@@ -223,12 +250,15 @@ fn reset_focus_timer(
 > {
     let snapshot = timer.reset();
 
-    app.emit(events::TIMER_TICK, snapshot)
-        .map_err(|error| {
-            format!(
-                "Failed to emit timer update: {error}"
-            )
-        })?;
+    app.emit(
+        events::TIMER_TICK,
+        snapshot,
+    )
+    .map_err(|error| {
+        format!(
+            "Failed to emit timer update: {error}"
+        )
+    })?;
 
     Ok(snapshot)
 }
@@ -309,6 +339,7 @@ pub fn run() {
                 start_focus_timer,
                 pause_focus_timer,
                 reset_focus_timer,
+                settings::load_settings,
             ],
         )
         .setup(|app| {
@@ -336,6 +367,10 @@ pub fn run() {
             focus_timer::spawn_focus_timer_monitor(
                 app.handle().clone(),
                 focus_timer,
+            );
+
+            settings::spawn_settings_monitor(
+                app.handle().clone(),
             );
 
             Ok(())
