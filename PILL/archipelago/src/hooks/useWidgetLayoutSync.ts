@@ -4,7 +4,9 @@ import { useWidgetOrchestrator } from './useWidgetOrchestrator';
 import { useIslandState } from './useIslandState';
 import { useIslandStore } from '../store/islandStore';
 
-const COLLAPSE_GRACE_PERIOD_MS = 750;
+import {
+  useSettingsStore,
+} from '../store/settingsStore';
 
 export function useWidgetLayoutSync(): void {
   const { layout } =
@@ -12,6 +14,18 @@ export function useWidgetLayoutSync(): void {
 
   const state = useIslandStore(
     (islandState) => islandState.state,
+  );
+
+  const autoCollapse = useSettingsStore(
+    (settingsState) =>
+      settingsState.settings.behavior
+        .autoCollapse,
+  );
+
+  const collapseDelayMs = useSettingsStore(
+    (settingsState) =>
+      settingsState.settings.behavior
+        .collapseDelayMs,
   );
 
   const {
@@ -66,22 +80,38 @@ export function useWidgetLayoutSync(): void {
     }
 
     /*
-     * When the last widget disappears, do not collapse
-     * immediately. Give the current event a short grace
-     * period so transient feature changes do not cause
-     * visible flicker.
+     * When the last widget disappears, optionally give
+     * the current event a short grace period before
+     * collapsing the pill.
      */
     if (
       layout === 'none' &&
       state === 'compact'
     ) {
+      if (!autoCollapse) {
+        /*
+         * Re-entering the effect while auto-collapse is
+         * disabled must cancel any previously scheduled
+         * collapse.
+         *
+         * transitionTo() clears the pending timer before
+         * checking whether the requested state is already
+         * current.
+         */
+        void transitionTo('compact');
+
+        return;
+      }
+
       scheduleCollapse(
-        COLLAPSE_GRACE_PERIOD_MS,
+        collapseDelayMs,
       );
     }
   }, [
     layout,
     state,
+    autoCollapse,
+    collapseDelayMs,
     transitionTo,
     scheduleCollapse,
   ]);
