@@ -1,4 +1,7 @@
-import { useCallback, useRef } from 'react';
+import {
+  useCallback,
+  useRef,
+} from 'react';
 
 import { invoke } from '@tauri-apps/api/core';
 
@@ -14,6 +17,10 @@ import {
 
 import { useWidgetStore } from '../store/widgetStore';
 
+import {
+  useSettingsStore,
+} from '../store/settingsStore';
+
 export function useIslandState() {
   const setState = useIslandStore(
     (islandState) => islandState.setState,
@@ -23,8 +30,33 @@ export function useIslandState() {
     (widgetState) => widgetState.activeWidgets,
   );
 
+  const widgetSettings = useSettingsStore(
+    (settingsState) =>
+      settingsState.settings.widgets,
+  );
+
+  const hoverToExpand = useSettingsStore(
+    (settingsState) =>
+      settingsState.settings.behavior
+        .hoverToExpand,
+  );
+
+  const clickToExpand = useSettingsStore(
+    (settingsState) =>
+      settingsState.settings.behavior
+        .clickToExpand,
+  );
+
+  const autoCollapse = useSettingsStore(
+    (settingsState) =>
+      settingsState.settings.behavior
+        .autoCollapse,
+  );
+
   const collapseTimerRef =
-    useRef<ReturnType<typeof setTimeout> | null>(null);
+    useRef<ReturnType<typeof setTimeout> | null>(
+      null,
+    );
 
   /*
    * The latest requested island state.
@@ -44,16 +76,25 @@ export function useIslandState() {
 
   const getCollapsedState =
     useCallback((): IslandState => {
-      if (activeWidgets.length === 0) {
+      const enabledActiveWidgets =
+        activeWidgets.filter(
+          (widgetId) =>
+            widgetSettings[widgetId],
+        );
+
+      if (enabledActiveWidgets.length === 0) {
         return 'idle';
       }
 
-      if (activeWidgets.length === 1) {
+      if (enabledActiveWidgets.length === 1) {
         return 'compact';
       }
 
       return 'split';
-    }, [activeWidgets.length]);
+    }, [
+      activeWidgets,
+      widgetSettings,
+    ]);
 
   const synchronizeNativeState =
     useCallback(async () => {
@@ -140,19 +181,19 @@ export function useIslandState() {
 
   const transitionTo = useCallback(
     async (newState: IslandState) => {
-      const currentState =
-        useIslandStore.getState().state;
-
-      if (currentState === newState) {
-        return;
-      }
-
       if (collapseTimerRef.current) {
         clearTimeout(
           collapseTimerRef.current,
         );
 
         collapseTimerRef.current = null;
+      }
+
+      const currentState =
+        useIslandStore.getState().state;
+
+      if (currentState === newState) {
+        return;
       }
 
       /*
@@ -170,7 +211,10 @@ export function useIslandState() {
 
       void synchronizeNativeState();
     },
-    [setState, synchronizeNativeState],
+    [
+      setState,
+      synchronizeNativeState,
+    ],
   );
 
   const scheduleCollapse = useCallback(
@@ -195,6 +239,10 @@ export function useIslandState() {
   );
 
   const handleMouseEnter = useCallback(() => {
+    if (!hoverToExpand) {
+      return;
+    }
+
     const currentState =
       useIslandStore.getState().state;
 
@@ -209,9 +257,16 @@ export function useIslandState() {
     ) {
       void transitionTo('expanded');
     }
-  }, [transitionTo]);
+  }, [
+    hoverToExpand,
+    transitionTo,
+  ]);
 
   const handleMouseLeave = useCallback(() => {
+    if (!autoCollapse) {
+      return;
+    }
+
     const currentState =
       useIslandStore.getState().state;
 
@@ -224,18 +279,26 @@ export function useIslandState() {
       );
     }
   }, [
+    autoCollapse,
     getCollapsedState,
     transitionTo,
   ]);
 
   const handleClick = useCallback(() => {
+    if (!clickToExpand) {
+      return;
+    }
+
     const currentState =
       useIslandStore.getState().state;
 
     if (currentState === 'compact') {
       void transitionTo('expanded');
     }
-  }, [transitionTo]);
+  }, [
+    clickToExpand,
+    transitionTo,
+  ]);
 
   const handleCollapse = useCallback(() => {
     const currentState =
