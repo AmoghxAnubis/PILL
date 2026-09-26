@@ -16,20 +16,36 @@ import {
   vi,
 } from 'vitest';
 
+import {
+  DEFAULT_PILL_SETTINGS,
+} from '../../../../shared/settings/PillSettings';
+
 import { Island } from './Island';
 
-import { useIslandStore } from '../../store/islandStore';
+import {
+  useIslandStore,
+} from '../../store/islandStore';
+
+import {
+  useSettingsStore,
+} from '../../store/settingsStore';
 
 import {
   useTauriTypedEvent,
   type FullscreenStateChanged,
 } from '../../lib/tauriEvents';
 
-import { useWidgetOrchestrator } from '../../hooks/useWidgetOrchestrator';
+import {
+  useWidgetOrchestrator,
+} from '../../hooks/useWidgetOrchestrator';
 
-import { useFeatureCoordinator } from '../../hooks/useFeatureCoordinator';
+import {
+  useFeatureCoordinator,
+} from '../../hooks/useFeatureCoordinator';
 
-import { useFeatureSources } from '../../hooks/useFeatureSources';
+import {
+  useFeatureSources,
+} from '../../hooks/useFeatureSources';
 
 afterEach(() => {
   cleanup();
@@ -127,6 +143,10 @@ describe('Island Component', () => {
       activeWidgets: [],
     });
 
+    useSettingsStore.setState({
+      settings: DEFAULT_PILL_SETTINGS,
+    });
+
     fullscreenHandler = undefined;
 
     vi.clearAllMocks();
@@ -165,6 +185,68 @@ describe('Island Component', () => {
     expect(
       useFeatureCoordinator,
     ).toHaveBeenCalled();
+  });
+
+  it('reads the animations setting from the settings store', () => {
+    useSettingsStore.setState({
+      settings: {
+        ...DEFAULT_PILL_SETTINGS,
+        appearance: {
+          ...DEFAULT_PILL_SETTINGS.appearance,
+          animations: false,
+        },
+      },
+    });
+
+    render(<Island />);
+
+    expect(
+      useSettingsStore.getState()
+        .settings.appearance.animations,
+    ).toBe(false);
+  });
+
+  it('reacts to a live animations setting change', () => {
+    render(<Island />);
+
+    expect(
+      useSettingsStore.getState()
+        .settings.appearance.animations,
+    ).toBe(true);
+
+    act(() => {
+      useSettingsStore.setState({
+        settings: {
+          ...DEFAULT_PILL_SETTINGS,
+          appearance: {
+            ...DEFAULT_PILL_SETTINGS.appearance,
+            animations: false,
+          },
+        },
+      });
+    });
+
+    expect(
+      useSettingsStore.getState()
+        .settings.appearance.animations,
+    ).toBe(false);
+
+    act(() => {
+      useSettingsStore.setState({
+        settings: {
+          ...DEFAULT_PILL_SETTINGS,
+          appearance: {
+            ...DEFAULT_PILL_SETTINGS.appearance,
+            animations: true,
+          },
+        },
+      });
+    });
+
+    expect(
+      useSettingsStore.getState()
+        .settings.appearance.animations,
+    ).toBe(true);
   });
 
   it('renders idle state initially', () => {

@@ -94,7 +94,10 @@ export function Island() {
 
   const contentTransition =
     animationsEnabled
-      ? undefined
+      ? {
+          duration: 0.12,
+          ease: 'easeOut' as const,
+        }
       : INSTANT_TRANSITION;
 
   return (
@@ -139,23 +142,20 @@ export function Island() {
             {state === 'idle' && (
               <motion.div
                 key="idle"
-                initial={{
-                  opacity: 0,
-                }}
+                initial={
+                  animationsEnabled
+                    ? {
+                        opacity: 0,
+                      }
+                    : false
+                }
                 animate={{
                   opacity: 1,
                 }}
                 exit={{
                   opacity: 0,
                 }}
-                transition={
-                  animationsEnabled
-                    ? {
-                        duration: 0.12,
-                        ease: 'easeOut',
-                      }
-                    : contentTransition
-                }
+                transition={contentTransition}
               >
                 <IdleState />
               </motion.div>
@@ -164,23 +164,20 @@ export function Island() {
             {state === 'compact' && (
               <motion.div
                 key="compact"
-                initial={{
-                  opacity: 0,
-                }}
+                initial={
+                  animationsEnabled
+                    ? {
+                        opacity: 0,
+                      }
+                    : false
+                }
                 animate={{
                   opacity: 1,
                 }}
                 exit={{
                   opacity: 0,
                 }}
-                transition={
-                  animationsEnabled
-                    ? {
-                        duration: 0.12,
-                        ease: 'easeOut',
-                      }
-                    : contentTransition
-                }
+                transition={contentTransition}
               >
                 <CompactState
                   widgetOrchestration={
@@ -193,23 +190,20 @@ export function Island() {
             {state === 'expanded' && (
               <motion.div
                 key="expanded"
-                initial={{
-                  opacity: 0,
-                }}
+                initial={
+                  animationsEnabled
+                    ? {
+                        opacity: 0,
+                      }
+                    : false
+                }
                 animate={{
                   opacity: 1,
                 }}
                 exit={{
                   opacity: 0,
                 }}
-                transition={
-                  animationsEnabled
-                    ? {
-                        duration: 0.15,
-                        ease: 'easeOut',
-                      }
-                    : contentTransition
-                }
+                transition={contentTransition}
               >
                 <ExpandedState
                   onCollapse={handleCollapse}
@@ -223,23 +217,20 @@ export function Island() {
             {state === 'split' && (
               <motion.div
                 key="split"
-                initial={{
-                  opacity: 0,
-                }}
+                initial={
+                  animationsEnabled
+                    ? {
+                        opacity: 0,
+                      }
+                    : false
+                }
                 animate={{
                   opacity: 1,
                 }}
                 exit={{
                   opacity: 0,
                 }}
-                transition={
-                  animationsEnabled
-                    ? {
-                        duration: 0.12,
-                        ease: 'easeOut',
-                      }
-                    : contentTransition
-                }
+                transition={contentTransition}
               >
                 <SplitState
                   widgetOrchestration={
