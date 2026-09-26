@@ -27,12 +27,20 @@ import {
   useIslandStore,
 } from '../../store/islandStore';
 
+import {
+  useSettingsStore,
+} from '../../store/settingsStore';
+
 import { IdleState } from '../states/IdleState';
 import { CompactState } from '../states/CompactState';
 import { ExpandedState } from '../states/ExpandedState';
 import { SplitState } from '../states/SplitState';
 
 import './Island.css';
+
+const INSTANT_TRANSITION = {
+  duration: 0,
+} as const;
 
 export function Island() {
   recordReactRender();
@@ -53,6 +61,13 @@ export function Island() {
     isEvasionActive,
   } = useIslandStore();
 
+  const animationsEnabled =
+    useSettingsStore(
+      (settingsState) =>
+        settingsState.settings.appearance
+          .animations,
+    );
+
   const widgetOrchestration =
     useWidgetOrchestrator();
 
@@ -72,11 +87,21 @@ export function Island() {
   const dims =
     ISLAND_DIMENSIONS[state];
 
+  const islandTransition =
+    animationsEnabled
+      ? SPRING_CONFIG
+      : INSTANT_TRANSITION;
+
+  const contentTransition =
+    animationsEnabled
+      ? undefined
+      : INSTANT_TRANSITION;
+
   return (
     <div className="island-wrapper">
       <motion.div
         className={`island island--${state}`}
-        layout
+        layout={animationsEnabled}
         data-widget-layout={
           widgetOrchestration.layout
         }
@@ -93,7 +118,7 @@ export function Island() {
           height: dims.height,
           opacity: shouldShowIsland ? 1 : 0,
         }}
-        transition={SPRING_CONFIG}
+        transition={islandTransition}
         style={{
           pointerEvents: shouldShowIsland
             ? 'auto'
@@ -123,10 +148,14 @@ export function Island() {
                 exit={{
                   opacity: 0,
                 }}
-                transition={{
-                  duration: 0.12,
-                  ease: 'easeOut',
-                }}
+                transition={
+                  animationsEnabled
+                    ? {
+                        duration: 0.12,
+                        ease: 'easeOut',
+                      }
+                    : contentTransition
+                }
               >
                 <IdleState />
               </motion.div>
@@ -144,10 +173,14 @@ export function Island() {
                 exit={{
                   opacity: 0,
                 }}
-                transition={{
-                  duration: 0.12,
-                  ease: 'easeOut',
-                }}
+                transition={
+                  animationsEnabled
+                    ? {
+                        duration: 0.12,
+                        ease: 'easeOut',
+                      }
+                    : contentTransition
+                }
               >
                 <CompactState
                   widgetOrchestration={
@@ -169,10 +202,14 @@ export function Island() {
                 exit={{
                   opacity: 0,
                 }}
-                transition={{
-                  duration: 0.15,
-                  ease: 'easeOut',
-                }}
+                transition={
+                  animationsEnabled
+                    ? {
+                        duration: 0.15,
+                        ease: 'easeOut',
+                      }
+                    : contentTransition
+                }
               >
                 <ExpandedState
                   onCollapse={handleCollapse}
@@ -195,10 +232,14 @@ export function Island() {
                 exit={{
                   opacity: 0,
                 }}
-                transition={{
-                  duration: 0.12,
-                  ease: 'easeOut',
-                }}
+                transition={
+                  animationsEnabled
+                    ? {
+                        duration: 0.12,
+                        ease: 'easeOut',
+                      }
+                    : contentTransition
+                }
               >
                 <SplitState
                   widgetOrchestration={
