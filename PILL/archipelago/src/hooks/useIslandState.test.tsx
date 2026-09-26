@@ -1,4 +1,7 @@
-import { act, renderHook } from '@testing-library/react';
+import {
+  act,
+  renderHook,
+} from '@testing-library/react';
 
 import {
   afterEach,
@@ -10,7 +13,18 @@ import {
 } from 'vitest';
 
 import { useIslandState } from './useIslandState';
+
+import {
+  DEFAULT_PILL_SETTINGS,
+} from '../../../shared/settings/PillSettings';
+
 import { useIslandStore } from '../store/islandStore';
+
+import { useWidgetStore } from '../store/widgetStore';
+
+import {
+  useSettingsStore,
+} from '../store/settingsStore';
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn().mockResolvedValue(undefined),
@@ -22,6 +36,14 @@ describe('useIslandState', () => {
   beforeEach(() => {
     useIslandStore.setState({
       state: 'idle',
+    });
+
+    useWidgetStore
+      .getState()
+      .clearWidgets();
+
+    useSettingsStore.setState({
+      settings: DEFAULT_PILL_SETTINGS,
     });
 
     vi.clearAllMocks();
@@ -59,6 +81,80 @@ describe('useIslandState', () => {
         state: 'expanded',
       },
     );
+  });
+
+  it('does not expand on hover when hover-to-expand is disabled', async () => {
+    useSettingsStore.setState({
+      settings: {
+        ...DEFAULT_PILL_SETTINGS,
+        behavior: {
+          ...DEFAULT_PILL_SETTINGS.behavior,
+          hoverToExpand: false,
+        },
+      },
+    });
+
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
+
+    await act(async () => {
+      result.current.handleMouseEnter();
+    });
+
+    expect(
+      useIslandStore.getState().state,
+    ).toBe('idle');
+
+    expect(
+      invoke,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('reacts to a live hover-to-expand setting change', async () => {
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
+
+    act(() => {
+      useSettingsStore.setState({
+        settings: {
+          ...DEFAULT_PILL_SETTINGS,
+          behavior: {
+            ...DEFAULT_PILL_SETTINGS.behavior,
+            hoverToExpand: false,
+          },
+        },
+      });
+    });
+
+    await act(async () => {
+      result.current.handleMouseEnter();
+    });
+
+    expect(
+      useIslandStore.getState().state,
+    ).toBe('idle');
+
+    act(() => {
+      useSettingsStore.setState({
+        settings: {
+          ...DEFAULT_PILL_SETTINGS,
+          behavior: {
+            ...DEFAULT_PILL_SETTINGS.behavior,
+            hoverToExpand: true,
+          },
+        },
+      });
+    });
+
+    await act(async () => {
+      result.current.handleMouseEnter();
+    });
+
+    expect(
+      useIslandStore.getState().state,
+    ).toBe('expanded');
   });
 
   it('transitions from compact to expanded on mouse enter', async () => {
@@ -127,6 +223,70 @@ describe('useIslandState', () => {
     );
   });
 
+  it('does not collapse on mouse leave when auto-collapse is disabled', async () => {
+    useIslandStore.setState({
+      state: 'expanded',
+    });
+
+    useSettingsStore.setState({
+      settings: {
+        ...DEFAULT_PILL_SETTINGS,
+        behavior: {
+          ...DEFAULT_PILL_SETTINGS.behavior,
+          autoCollapse: false,
+        },
+      },
+    });
+
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
+
+    await act(async () => {
+      result.current.handleMouseLeave();
+    });
+
+    expect(
+      useIslandStore.getState().state,
+    ).toBe('expanded');
+
+    expect(
+      invoke,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('does not collapse a compact pill on mouse leave when auto-collapse is disabled', async () => {
+    useIslandStore.setState({
+      state: 'compact',
+    });
+
+    useSettingsStore.setState({
+      settings: {
+        ...DEFAULT_PILL_SETTINGS,
+        behavior: {
+          ...DEFAULT_PILL_SETTINGS.behavior,
+          autoCollapse: false,
+        },
+      },
+    });
+
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
+
+    await act(async () => {
+      result.current.handleMouseLeave();
+    });
+
+    expect(
+      useIslandStore.getState().state,
+    ).toBe('compact');
+
+    expect(
+      invoke,
+    ).not.toHaveBeenCalled();
+  });
+
   it('transitions from compact to expanded on click', async () => {
     useIslandStore.setState({
       state: 'compact',
@@ -158,6 +318,38 @@ describe('useIslandState', () => {
         state: 'expanded',
       },
     );
+  });
+
+  it('does not expand on click when click-to-expand is disabled', async () => {
+    useIslandStore.setState({
+      state: 'compact',
+    });
+
+    useSettingsStore.setState({
+      settings: {
+        ...DEFAULT_PILL_SETTINGS,
+        behavior: {
+          ...DEFAULT_PILL_SETTINGS.behavior,
+          clickToExpand: false,
+        },
+      },
+    });
+
+    const { result } = renderHook(
+      () => useIslandState(),
+    );
+
+    await act(async () => {
+      result.current.handleClick();
+    });
+
+    expect(
+      useIslandStore.getState().state,
+    ).toBe('compact');
+
+    expect(
+      invoke,
+    ).not.toHaveBeenCalled();
   });
 
   it('collapses expanded to idle', async () => {
@@ -210,7 +402,9 @@ describe('useIslandState', () => {
       useIslandStore.getState().state,
     ).toBe('split');
 
-    expect(invoke).not.toHaveBeenCalled();
+    expect(
+      invoke,
+    ).not.toHaveBeenCalled();
   });
 
   it('transitions to split with the correct native dimensions', async () => {
@@ -270,7 +464,9 @@ describe('useIslandState', () => {
       useIslandStore.getState().state,
     ).toBe('split');
 
-    expect(invoke).not.toHaveBeenCalled();
+    expect(
+      invoke,
+    ).not.toHaveBeenCalled();
   });
 
   it('uses the requested delay when scheduling collapse', async () => {
