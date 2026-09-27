@@ -2,7 +2,8 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "PILL Control",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "mainBinaryName": "PILL-Control",
+  "identifier": "com.pill.control",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5174",
@@ -12,6 +13,7 @@
   "app": {
     "windows": [
       {
+        "label": "control",
         "title": "PILL Control",
         "width": 800,
         "height": 600,
@@ -25,16 +27,20 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "nsis",
+      "msi"
+    ],
+    "publisher": "PILL",
+    "category": "Productivity",
+    "shortDescription": "Configuration control center for PILL.",
+    "longDescription": "PILL Control is the configuration workspace for PILL, allowing users to manage widgets, behavior, appearance, and system preferences.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "android": {
-      "debugApplicationIdSuffix": ".debug"
-    }
+    ]
   }
 }
