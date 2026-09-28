@@ -49,14 +49,6 @@ jobs:
         run: npm run build
 
       # ------------------------------------------------------
-      # PILL Rust backend
-      # ------------------------------------------------------
-
-      - name: Run PILL Rust tests
-        working-directory: PILL/archipelago
-        run: cargo test --manifest-path src-tauri/Cargo.toml
-
-      # ------------------------------------------------------
       # PILL Control
       # ------------------------------------------------------
 
@@ -68,6 +60,14 @@ jobs:
         working-directory: PILL/pill-control
         run: npm run lint
 
-      - name: Build PILL Control
+      - name: Build PILL Control release
         working-directory: PILL/pill-control
-        run: npm run build
+        run: npx tauri build --no-bundle
+
+      # ------------------------------------------------------
+      # PILL Rust backend
+      # ------------------------------------------------------
+
+      - name: Run PILL Rust tests
+        working-directory: PILL/archipelago
+        run: cargo test --manifest-path src-tauri/Cargo.toml
