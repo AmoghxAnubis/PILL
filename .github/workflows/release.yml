@@ -1,0 +1,108 @@
+name: PILL Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build Windows Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: |
+            PILL/archipelago/package-lock.json
+            PILL/pill-control/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # ------------------------------------------------------
+      # Install dependencies
+      # ------------------------------------------------------
+
+      - name: Install PILL dependencies
+        working-directory: PILL/archipelago
+        run: npm ci
+
+      - name: Install PILL Control dependencies
+        working-directory: PILL/pill-control
+        run: npm ci
+
+      # ------------------------------------------------------
+      # Build PILL Control first
+      # ------------------------------------------------------
+
+      - name: Build PILL Control release
+        working-directory: PILL/pill-control
+        run: npx tauri build --no-bundle
+
+      # ------------------------------------------------------
+      # Build PILL frontend
+      # ------------------------------------------------------
+
+      - name: Build PILL frontend
+        working-directory: PILL/archipelago
+        run: npm run build
+
+      # ------------------------------------------------------
+      # Verify tag matches application version
+      # ------------------------------------------------------
+
+      - name: Verify release version
+        working-directory: PILL/archipelago
+        shell: powershell
+        run: |
+          $config = Get-Content .\src-tauri\tauri.conf.json | ConvertFrom-Json
+          $expectedTag = "v$($config.version)"
+          $actualTag = "${{ github.ref_name }}"
+
+          Write-Host "Application version: $($config.version)"
+          Write-Host "Expected tag:        $expectedTag"
+          Write-Host "Actual tag:          $actualTag"
+
+          if ($actualTag -ne $expectedTag) {
+            throw "Git tag $actualTag does not match application version $($config.version)."
+          }
+
+      # ------------------------------------------------------
+      # Build and publish PILL
+      # ------------------------------------------------------
+
+      - name: Build and publish PILL
+        uses: tauri-apps/tauri-action@v0.6.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: PILL/archipelago
+          tagName: ${{ github.ref_name }}
+          releaseName: "PILL ${{ github.ref_name }}"
+          releaseBody: |
+            ## PILL ${{ github.ref_name }}
+
+            PILL is a lightweight Windows dynamic island for media, telemetry,
+            focus sessions, and contextual desktop information.
+
+            ### Windows
+            Download the `-setup.exe` installer from the assets below.
+
+            ### Included
+            - PILL
+            - PILL Control
+            - Windows desktop integration
+          releaseDraft: true
+          prerelease: false
+          generateReleaseNotes: true
+          args: "--bundles nsis"
