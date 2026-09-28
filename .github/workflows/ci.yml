@@ -1,0 +1,73 @@
+name: PILL CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate PILL
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: |
+            PILL/archipelago/package-lock.json
+            PILL/pill-control/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # ------------------------------------------------------
+      # PILL frontend
+      # ------------------------------------------------------
+
+      - name: Install PILL dependencies
+        working-directory: PILL/archipelago
+        run: npm ci
+
+      - name: Run PILL frontend tests
+        working-directory: PILL/archipelago
+        run: npm test -- --run
+
+      - name: Build PILL frontend
+        working-directory: PILL/archipelago
+        run: npm run build
+
+      # ------------------------------------------------------
+      # PILL Rust backend
+      # ------------------------------------------------------
+
+      - name: Run PILL Rust tests
+        working-directory: PILL/archipelago
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      # ------------------------------------------------------
+      # PILL Control
+      # ------------------------------------------------------
+
+      - name: Install PILL Control dependencies
+        working-directory: PILL/pill-control
+        run: npm ci
+
+      - name: Lint PILL Control
+        working-directory: PILL/pill-control
+        run: npm run lint
+
+      - name: Build PILL Control
+        working-directory: PILL/pill-control
+        run: npm run build
