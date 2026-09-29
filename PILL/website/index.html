@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>PILL — Your desktop, at a glance.</title>
+
+  <meta
+    name="description"
+    content="PILL is a lightweight Windows desktop overlay for media, telemetry, focus sessions, and contextual information."
+  />
+
+  <meta name="theme-color" content="#050507" />
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <div class="page-noise"></div>
+
+  <header class="site-header">
+    <a class="brand" href="#">
+      <span class="brand-mark">
+        <span></span>
+        <span></span>
+      </span>
+
+      <span>PILL</span>
+    </a>
+
+    <nav class="nav">
+      <a href="#features">Features</a>
+      <a href="#control">Control</a>
+      <a href="#install">Install</a>
+      <a
+        href="https://github.com/AmoghxAnubis/PILL"
+        target="_blank"
+        rel="noreferrer"
+      >
+        GitHub
+      </a>
+    </nav>
+
+    <a class="nav-download" href="#install">
+      Download
+    </a>
+  </header>
+
+  <main>
+    <!-- HERO -->
+
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">
+          <span class="status-dot"></span>
+          WINDOWS DESKTOP
+        </div>
+
+        <h1>
+          Your desktop,
+          <span>at a glance.</span>
+        </h1>
+
+        <p class="hero-description">
+          PILL brings the useful parts of your desktop into one compact
+          dynamic island — media, telemetry, focus sessions and more.
+        </p>
+
+        <div class="hero-actions">
+          <a
+            class="button button-primary"
+            href="https://github.com/AmoghxAnubis/PILL/releases"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Download for Windows
+            <span>↗</span>
+          </a>
+
+          <a class="button button-secondary" href="#features">
+            Explore PILL
+            <span>↓</span>
+          </a>
+        </div>
+
+        <div class="hero-meta">
+          <span>Windows</span>
+          <i></i>
+          <span>v0.1.0</span>
+          <i></i>
+          <span>Free &amp; open source</span>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="orbit orbit-one"></div>
+        <div class="orbit orbit-two"></div>
+
+        <div class="desktop-window">
+          <div class="desktop-topbar">
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+
+          <div class="desktop-content">
+            <div class="desktop-card desktop-card-large"></div>
+            <div class="desktop-card"></div>
+            <div class="desktop-card"></div>
+          </div>
+
+          <div class="pill-stage">
+            <div class="pill-shadow"></div>
+
+            <div class="pill-demo" id="pillDemo">
+              <div class="pill-icon">
+                <div class="pulse-ring"></div>
+                <div class="pill-core"></div>
+              </div>
+
+              <div class="pill-content">
+                <span class="pill-label" id="pillLabel">
+                  PILL
+                </span>
+
+                <strong id="pillValue">
+                  Ready
+                </strong>
+              </div>
+
+              <div class="pill-time" id="pillTime">
+                09:41
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="visual-caption">
+          <span id="visualState">IDLE</span>
+          <span>LIVE PRODUCT PREVIEW</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- INTRO -->
+
+    <section class="intro">
+      <div class="section-index">01</div>
+
+      <div>
+        <p class="section-kicker">THE IDEA</p>
+
+        <h2>
+          Information shouldn't
+          <span>fight for your attention.</span>
+        </h2>
+
+        <p class="section-text">
+          PILL stays compact when nothing needs your attention and expands
+          when useful context appears.
+        </p>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+
+    <section class="features-section" id="features">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">WHAT IT DOES</p>
+
+          <h2>
+            Small surface.
+            <span>Useful context.</span>
+          </h2>
+        </div>
+
+        <p>
+          A focused desktop layer designed to keep the important things
+          visible without turning your screen into another dashboard.
+        </p>
+      </div>
+
+      <div class="feature-grid">
+        <article class="feature-card feature-card-wide">
+          <div class="feature-number">01</div>
+
+          <div class="feature-visual media-visual">
+            <div class="media-player">
+              <div class="album-art"></div>
+
+              <div class="media-lines">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+
+              <div class="media-controls">
+                <span>◀</span>
+                <strong>Ⅱ</strong>
+                <span>▶</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="feature-copy">
+            <h3>Media</h3>
+
+            <p>
+              Keep playback context and controls close without opening
+              another application window.
+            </p>
+          </div>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-number">02</div>
+
+          <div class="feature-visual telemetry-visual">
+            <div class="telemetry-ring">
+              <div>
+                <strong>42%</strong>
+                <span>CPU</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="feature-copy">
+            <h3>Telemetry</h3>
+
+            <p>
+              See system information without opening a monitoring dashboard.
+            </p>
+          </div>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-number">03</div>
+
+          <div class="feature-visual focus-visual">
+            <div class="focus-clock">
+              <strong>24:58</strong>
+              <span>FOCUS</span>
+            </div>
+          </div>
+
+          <div class="feature-copy">
+            <h3>Focus</h3>
+
+            <p>
+              Run focused sessions from the same compact desktop surface.
+            </p>
+          </div>
+        </article>
+
+        <article class="feature-card feature-card-wide">
+          <div class="feature-number">04</div>
+
+          <div class="feature-visual behavior-visual">
+            <div class="behavior-pill">
+              <div></div>
+              <span>adaptive</span>
+            </div>
+
+            <div class="behavior-line"></div>
+
+            <div class="behavior-labels">
+              <span>compact</span>
+              <span>expanded</span>
+            </div>
+          </div>
+
+          <div class="feature-copy">
+            <h3>Contextual behavior</h3>
+
+            <p>
+              PILL can react to interaction and application state,
+              expanding when context calls for it and collapsing when it
+              doesn't.
+            </p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- CONTROL -->
+
+    <section class="control-section" id="control">
+      <div class="control-copy">
+        <p class="section-kicker">PILL CONTROL</p>
+
+        <h2>
+          One place to shape
+          <span>your PILL.</span>
+        </h2>
+
+        <p>
+          PILL Control gives you direct control over widgets, behavior,
+          appearance and system preferences.
+        </p>
+
+        <div class="control-list">
+          <div>
+            <span>01</span>
+            <strong>Widgets</strong>
+            <p>Choose which information PILL can surface.</p>
+          </div>
+
+          <div>
+            <span>02</span>
+            <strong>Behavior</strong>
+            <p>Configure expansion, collapse and fullscreen behavior.</p>
+          </div>
+
+          <div>
+            <span>03</span>
+            <strong>Appearance</strong>
+            <p>Control theme and animation behavior.</p>
+          </div>
+
+          <div>
+            <span>04</span>
+            <strong>System</strong>
+            <p>Manage startup and tray preferences.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="control-visual">
+        <div class="control-window">
+          <div class="control-sidebar">
+            <div class="control-logo">
+              <span></span>
+              PILL
+            </div>
+
+            <div class="control-nav active">
+              <span></span>
+              Overview
+            </div>
+
+            <div class="control-nav">
+              <span></span>
+              Widgets
+            </div>
+
+            <div class="control-nav">
+              <span></span>
+              Behavior
+            </div>
+
+            <div class="control-nav">
+              <span></span>
+              Appearance
+            </div>
+
+            <div class="control-nav">
+              <span></span>
+              System
+            </div>
+          </div>
+
+          <div class="control-main">
+            <div class="control-header">
+              <span>Control Center</span>
+              <small>PILL</small>
+            </div>
+
+            <div class="control-main-heading">
+              <span>OVERVIEW</span>
+              <strong>Everything in one place.</strong>
+            </div>
+
+            <div class="control-panels">
+              <div class="control-panel">
+                <span>ACTIVE WIDGETS</span>
+                <strong>03</strong>
+              </div>
+
+              <div class="control-panel">
+                <span>ANIMATIONS</span>
+                <strong>ON</strong>
+              </div>
+
+              <div class="control-panel control-panel-wide">
+                <span>FULLSCREEN EVASION</span>
+
+                <div class="fake-toggle active">
+                  <div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSTALL -->
+
+    <section class="install-section" id="install">
+      <div class="section-heading install-heading">
+        <div>
+          <p class="section-kicker">GET PILL</p>
+
+          <h2>
+            Pick your
+            <span>way in.</span>
+          </h2>
+        </div>
+
+        <p>
+          Start with the Windows installer. A native terminal installation
+          will follow through WinGet.
+        </p>
+      </div>
+
+      <div class="install-grid">
+        <article class="install-card">
+          <div class="install-card-top">
+            <span>01</span>
+            <span>WINDOWS</span>
+          </div>
+
+          <h3>Download PILL</h3>
+
+          <p>
+            Grab the latest Windows installer from the PILL GitHub release.
+          </p>
+
+          <a
+            class="install-button"
+            href="https://github.com/AmoghxAnubis/PILL/releases"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open Releases
+            <span>↗</span>
+          </a>
+        </article>
+
+        <article class="install-card terminal-card">
+          <div class="install-card-top">
+            <span>02</span>
+            <span>TERMINAL</span>
+          </div>
+
+          <h3>Install with WinGet</h3>
+
+          <p>
+            PILL's WinGet package is being prepared for public distribution.
+          </p>
+
+          <div class="terminal">
+            <div class="terminal-bar">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+
+            <div class="terminal-body">
+              <span class="terminal-prompt">$</span>
+              <span>winget install PILL</span>
+              <span class="terminal-cursor"></span>
+            </div>
+          </div>
+
+          <span class="coming-soon">
+            WinGet package — coming soon
+          </span>
+        </article>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+
+    <section class="faq-section">
+      <div class="section-index">02</div>
+
+      <div class="faq-content">
+        <div>
+          <p class="section-kicker">QUESTIONS</p>
+
+          <h2>
+            Before you
+            <span>install.</span>
+          </h2>
+        </div>
+
+        <div class="faq">
+          <details open>
+            <summary>
+              What is PILL?
+              <span>+</span>
+            </summary>
+
+            <p>
+              PILL is a Windows desktop overlay that surfaces media,
+              telemetry, focus sessions and contextual information in a
+              compact dynamic island.
+            </p>
+          </details>
+
+          <details>
+            <summary>
+              What is PILL Control?
+              <span>+</span>
+            </summary>
+
+            <p>
+              PILL Control is the companion configuration application for
+              managing PILL's widgets, behavior, appearance and system
+              preferences.
+            </p>
+          </details>
+
+          <details>
+            <summary>
+              Which Windows versions are supported?
+              <span>+</span>
+            </summary>
+
+            <p>
+              The current PILL release is built specifically for Windows.
+              Exact supported-version requirements will be documented with
+              the public release.
+            </p>
+          </details>
+
+          <details>
+            <summary>
+              Is PILL free?
+              <span>+</span>
+            </summary>
+
+            <p>
+              The current PILL release is distributed as a free and
+              open-source Windows application through GitHub.
+            </p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+
+    <section class="final-cta">
+      <div class="cta-glow"></div>
+
+      <div class="cta-content">
+        <div class="eyebrow">
+          <span class="status-dot"></span>
+          PILL 0.1.0
+        </div>
+
+        <h2>
+          Put the useful stuff
+          <span>where you can see it.</span>
+        </h2>
+
+        <div class="cta-actions">
+          <a
+            class="button button-primary"
+            href="https://github.com/AmoghxAnubis/PILL/releases"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Get PILL
+            <span>↗</span>
+          </a>
+
+          <a
+            class="button button-secondary"
+            href="https://github.com/AmoghxAnubis/PILL"
+            target="_blank"
+            rel="noreferrer"
+          >
+            View source
+            <span>↗</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="brand">
+      <span class="brand-mark">
+        <span></span>
+        <span></span>
+      </span>
+
+      <span>PILL</span>
+    </div>
+
+    <span>
+      A lightweight dynamic island for Windows.
+    </span>
+
+    <a
+      href="https://github.com/AmoghxAnubis/PILL"
+      target="_blank"
+      rel="noreferrer"
+    >
+      GitHub ↗
+    </a>
+  </footer>
+
+  <script src="./script.js"></script>
+</body>
+</html>
