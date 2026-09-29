@@ -1589,3 +1589,117 @@ a {
     transition: none;
   }
 }
+/* ==========================================================
+   MILESTONE B — PRODUCT INTERACTIONS
+========================================================== */
+
+/* ----------------------------------------------------------
+   Feature cards
+---------------------------------------------------------- */
+
+.feature-card {
+  transition:
+    border-color 220ms ease,
+    box-shadow 260ms ease,
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.feature-card:hover {
+  border-color:
+    rgba(255, 255, 255, 0.14);
+
+  box-shadow:
+    0 28px 65px rgba(0, 0, 0, 0.24);
+}
+
+.feature-glow {
+  transition:
+    opacity 220ms ease;
+}
+
+.feature-visual {
+  will-change: transform;
+}
+
+/* ----------------------------------------------------------
+   PILL Control navigation
+---------------------------------------------------------- */
+
+.control-nav {
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.control-nav:focus-visible {
+  outline: none;
+  color: #f5f5fa;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.11);
+}
+
+/* ----------------------------------------------------------
+   PILL Control panels
+---------------------------------------------------------- */
+
+.control-panel {
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.control-panel:hover {
+  border-color:
+    rgba(255, 255, 255, 0.12);
+
+  background:
+    rgba(255, 255, 255, 0.025);
+
+  transform: translateY(-1px);
+}
+
+/* ----------------------------------------------------------
+   Mock toggles
+---------------------------------------------------------- */
+
+.fake-toggle {
+  cursor: pointer;
+  transition:
+    background 180ms ease;
+}
+
+.fake-toggle div {
+  transition:
+    margin-left 180ms ease,
+    background 180ms ease;
+}
+
+.fake-toggle:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px
+      rgba(255, 112, 173, 0.18);
+}
+
+/* ----------------------------------------------------------
+   Reduced motion
+---------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .feature-card,
+  .feature-visual,
+  .control-nav,
+  .control-panel,
+  .fake-toggle,
+  .fake-toggle div {
+    transition: none !important;
+  }
+
+  .feature-card:hover,
+  .control-panel:hover {
+    transform: none;
+  }
+}
