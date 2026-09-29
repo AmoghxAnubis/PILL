@@ -683,6 +683,7 @@ a {
 .telemetry-ring {
   width: 185px;
   height: 185px;
+  position: relative;
   display: grid;
   place-items: center;
   border: 1px solid rgba(102, 120, 255, 0.35);
@@ -917,6 +918,11 @@ a {
   border-radius: 8px;
   color: #696974;
   font-size: 10px;
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
 }
 
 .control-nav span {
@@ -929,6 +935,13 @@ a {
 .control-nav.active {
   background: rgba(255, 255, 255, 0.05);
   color: #efeff5;
+}
+
+.control-nav:focus-visible {
+  outline: none;
+  color: #f5f5fa;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.11);
 }
 
 .control-main {
@@ -983,6 +996,16 @@ a {
   border: 1px solid var(--border);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.018);
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.control-panel:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.025);
+  transform: translateY(-1px);
 }
 
 .control-panel-wide {
@@ -1009,6 +1032,8 @@ a {
   padding: 2px;
   border-radius: 999px;
   background: #25252d;
+  cursor: pointer;
+  transition: background 180ms ease;
 }
 
 .fake-toggle div {
@@ -1016,6 +1041,9 @@ a {
   height: 16px;
   border-radius: 50%;
   background: #777782;
+  transition:
+    margin-left 180ms ease,
+    background 180ms ease;
 }
 
 .fake-toggle.active {
@@ -1025,6 +1053,12 @@ a {
 .fake-toggle.active div {
   margin-left: 16px;
   background: var(--pink);
+}
+
+.fake-toggle:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(255, 112, 173, 0.18);
 }
 
 .install-section {
@@ -1055,6 +1089,17 @@ a {
       rgba(255, 255, 255, 0.035),
       rgba(255, 255, 255, 0.012)
     );
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms ease,
+    box-shadow 260ms ease;
+}
+
+.install-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.22);
 }
 
 .install-card h3 {
@@ -1072,7 +1117,17 @@ a {
   line-height: 1.6;
 }
 
+.install-card-top span:last-child {
+  transition: color 180ms ease;
+}
+
+.install-card:hover .install-card-top span:last-child {
+  color: #bdbdc7;
+}
+
 .install-button {
+  position: relative;
+  overflow: hidden;
   margin-top: auto;
   width: fit-content;
   min-height: 46px;
@@ -1263,13 +1318,28 @@ a {
   justify-self: end;
 }
 
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: scale(1.18);
+    opacity: 0.15;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 /* ==========================================================
    INTERACTION LAYER
 ========================================================== */
-
-/* ----------------------------------------------------------
-   Scroll progress
----------------------------------------------------------- */
 
 .scroll-progress {
   position: fixed;
@@ -1291,10 +1361,6 @@ a {
   transition: width 90ms linear;
 }
 
-/* ----------------------------------------------------------
-   Scroll reveal
----------------------------------------------------------- */
-
 .reveal {
   opacity: 0;
   transform: translateY(28px);
@@ -1309,10 +1375,6 @@ a {
   transform: translateY(0);
 }
 
-/* ----------------------------------------------------------
-   Hero PILL interaction
----------------------------------------------------------- */
-
 .pill-demo {
   cursor: pointer;
   user-select: none;
@@ -1322,8 +1384,7 @@ a {
 
 .pill-demo:hover {
   transform: translateY(-2px);
-  border-color:
-    rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.2);
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.08),
     0 18px 42px rgba(0, 0, 0, 0.48),
@@ -1336,8 +1397,7 @@ a {
 
 .pill-demo:focus-visible {
   outline: none;
-  border-color:
-    rgba(255, 112, 173, 0.65);
+  border-color: rgba(255, 112, 173, 0.65);
   box-shadow:
     0 0 0 3px rgba(255, 61, 142, 0.1),
     0 16px 40px rgba(0, 0, 0, 0.42);
@@ -1356,49 +1416,135 @@ a {
     transform 140ms ease;
 }
 
-.pill-demo.is-swapping
-.pill-label,
-.pill-demo.is-swapping
-.pill-content strong,
-.pill-demo.is-swapping
-.pill-time {
+.pill-demo.is-swapping .pill-label,
+.pill-demo.is-swapping .pill-content strong,
+.pill-demo.is-swapping .pill-time {
   opacity: 0;
   transform: translateY(4px);
 }
 
-/* Slightly different glow per state */
-
-.pill-demo[data-state="MEDIA"]
-.pill-core {
+.pill-demo[data-state="MEDIA"] .pill-core {
   background: var(--pink-soft);
-  box-shadow:
-    0 0 17px rgba(255, 112, 173, 0.78);
+  box-shadow: 0 0 17px rgba(255, 112, 173, 0.78);
 }
 
-.pill-demo[data-state="TELEMETRY"]
-.pill-core {
+.pill-demo[data-state="TELEMETRY"] .pill-core {
   background: var(--blue);
-  box-shadow:
-    0 0 17px rgba(102, 120, 255, 0.78);
+  box-shadow: 0 0 17px rgba(102, 120, 255, 0.78);
 }
 
-.pill-demo[data-state="FOCUS"]
-.pill-core {
+.pill-demo[data-state="FOCUS"] .pill-core {
   background: var(--green);
-  box-shadow:
-    0 0 17px rgba(101, 223, 154, 0.72);
+  box-shadow: 0 0 17px rgba(101, 223, 154, 0.72);
 }
 
-.pill-demo[data-state="EXPANDED"]
-.pill-core {
+.pill-demo[data-state="EXPANDED"] .pill-core {
   background: var(--purple);
-  box-shadow:
-    0 0 18px rgba(143, 106, 255, 0.82);
+  box-shadow: 0 0 18px rgba(143, 106, 255, 0.82);
 }
 
 /* ----------------------------------------------------------
-   Mobile adjustments
+   Feature card interactions
 ---------------------------------------------------------- */
+
+.feature-card {
+  transition:
+    border-color 220ms ease,
+    box-shadow 260ms ease,
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.feature-card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 28px 65px rgba(0, 0, 0, 0.24);
+}
+
+.feature-visual {
+  will-change: transform;
+}
+
+/* ----------------------------------------------------------
+   Download interactions
+---------------------------------------------------------- */
+
+.button-primary,
+.install-button,
+.nav-download {
+  position: relative;
+  overflow: hidden;
+}
+
+.button-primary::after,
+.install-button::after,
+.nav-download::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 80%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.22);
+  transform: skewX(-18deg);
+  transition: left 450ms ease;
+  pointer-events: none;
+}
+
+.button-primary:hover::after,
+.install-button:hover::after,
+.nav-download:hover::after {
+  left: 140%;
+}
+
+.button-primary > span,
+.install-button > span {
+  display: inline-block;
+  transition: transform 180ms ease;
+}
+
+.button-primary:hover > span,
+.install-button:hover > span {
+  transform: translateY(2px);
+}
+
+/* ----------------------------------------------------------
+   Reduced motion
+---------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  .pill-demo,
+  .feature-card,
+  .install-card,
+  .feature-visual,
+  .control-nav,
+  .control-panel,
+  .fake-toggle,
+  .fake-toggle div {
+    transition: none !important;
+  }
+
+  .feature-card:hover,
+  .install-card:hover,
+  .control-panel:hover {
+    transform: none;
+  }
+}
 
 @media (max-width: 980px) {
   .nav {
@@ -1559,147 +1705,6 @@ a {
   }
 
   .pill-demo:hover {
-    transform: none;
-  }
-}
-
-/* ----------------------------------------------------------
-   Accessibility
----------------------------------------------------------- */
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  .reveal {
-    opacity: 1;
-    transform: none;
-  }
-
-  .pill-demo {
-    transition: none;
-  }
-}
-/* ==========================================================
-   MILESTONE B — PRODUCT INTERACTIONS
-========================================================== */
-
-/* ----------------------------------------------------------
-   Feature cards
----------------------------------------------------------- */
-
-.feature-card {
-  transition:
-    border-color 220ms ease,
-    box-shadow 260ms ease,
-    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.feature-card:hover {
-  border-color:
-    rgba(255, 255, 255, 0.14);
-
-  box-shadow:
-    0 28px 65px rgba(0, 0, 0, 0.24);
-}
-
-.feature-glow {
-  transition:
-    opacity 220ms ease;
-}
-
-.feature-visual {
-  will-change: transform;
-}
-
-/* ----------------------------------------------------------
-   PILL Control navigation
----------------------------------------------------------- */
-
-.control-nav {
-  cursor: pointer;
-  transition:
-    color 180ms ease,
-    background 180ms ease,
-    transform 180ms ease;
-}
-
-.control-nav:focus-visible {
-  outline: none;
-  color: #f5f5fa;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.11);
-}
-
-/* ----------------------------------------------------------
-   PILL Control panels
----------------------------------------------------------- */
-
-.control-panel {
-  transition:
-    border-color 180ms ease,
-    background 180ms ease,
-    transform 180ms ease;
-}
-
-.control-panel:hover {
-  border-color:
-    rgba(255, 255, 255, 0.12);
-
-  background:
-    rgba(255, 255, 255, 0.025);
-
-  transform: translateY(-1px);
-}
-
-/* ----------------------------------------------------------
-   Mock toggles
----------------------------------------------------------- */
-
-.fake-toggle {
-  cursor: pointer;
-  transition:
-    background 180ms ease;
-}
-
-.fake-toggle div {
-  transition:
-    margin-left 180ms ease,
-    background 180ms ease;
-}
-
-.fake-toggle:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px
-      rgba(255, 112, 173, 0.18);
-}
-
-/* ----------------------------------------------------------
-   Reduced motion
----------------------------------------------------------- */
-
-@media (prefers-reduced-motion: reduce) {
-  .feature-card,
-  .feature-visual,
-  .control-nav,
-  .control-panel,
-  .fake-toggle,
-  .fake-toggle div {
-    transition: none !important;
-  }
-
-  .feature-card:hover,
-  .control-panel:hover {
     transform: none;
   }
 }
