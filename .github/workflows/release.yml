@@ -106,3 +106,4 @@ jobs:
           prerelease: false
           generateReleaseNotes: true
           args: "--bundles nsis"
+          
