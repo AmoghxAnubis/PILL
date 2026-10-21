@@ -1,6 +1,6 @@
 # PILL
 
-> A lightweight Windows dynamic island for media, telemetry, focus sessions, and contextual desktop information.
+> A lightweight Windows dynamic island for media, telemetry, focus sessions, and contextual desktop information.Based on rust.
 
 <p align="center">
   <img src="PILL/archipelago/src-tauri/icons/icon.png" alt="PILL" width="96">
