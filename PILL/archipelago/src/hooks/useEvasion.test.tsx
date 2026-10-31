@@ -213,7 +213,7 @@ describe('useEvasion', () => {
         .isEvasionActive,
     ).toBe(true);
 
-    act(() => {
+    await act(async () => {
       useSettingsStore.setState({
         settings: {
           ...DEFAULT_PILL_SETTINGS,
@@ -264,7 +264,7 @@ describe('useEvasion', () => {
         .isEvasionActive,
     ).toBe(false);
 
-    act(() => {
+    await act(async () => {
       useSettingsStore.setState({
         settings: {
           ...DEFAULT_PILL_SETTINGS,
