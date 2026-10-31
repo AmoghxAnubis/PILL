@@ -3,15 +3,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModuleDashboard } from './ModuleDashboard';
 import { useIslandStore } from '../../store/islandStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useTelemetryStore } from '../../store/telemetryStore';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue(undefined) }));
 beforeEach(() => {
   useIslandStore.setState({ selectedModule: null, pinned: false });
   useSettingsStore.getState().resetSettings();
+  useTelemetryStore.getState().clearTelemetry();
 });
 afterEach(cleanup);
 
 describe('module dashboard', () => {
+  it('shows unavailable telemetry until an actual sample arrives', () => {
+    render(<ModuleDashboard onCollapse={() => {}} />);
+    fireEvent.click(screen.getByRole('tab', { name: 'System' }));
+    expect(screen.getByText('Waiting for system data')).toBeInTheDocument();
+    expect(screen.queryByRole('meter')).not.toBeInTheDocument();
+    act(() => useTelemetryStore.getState().setTelemetry(42, 57));
+    expect(screen.getByRole('meter', { name: 'CPU usage' })).toHaveAttribute('value', '42');
+  });
+
   it('preserves an explicit calendar selection when background media takes priority', () => {
     const { rerender } = render(<ModuleDashboard onCollapse={() => {}} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Calendar' }));
