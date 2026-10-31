@@ -141,6 +141,8 @@ describe('Island Component', () => {
       visible: true,
       isEvasionActive: false,
       activeWidgets: [],
+      menuOpen: false,
+      pinned: false,
     });
 
     useSettingsStore.setState({
@@ -255,6 +257,27 @@ describe('Island Component', () => {
     expect(
       screen.getByTestId('idle-state'),
     ).toBeInTheDocument();
+  });
+
+  it('applies background opacity independently and keeps native sizing aligned with scale', async () => {
+    render(<Island />);
+    await act(async () => useSettingsStore.getState().updateAppearance({ theme: 'purple', opacity: 0.7, scale: 1.25, shape: 'panel' }));
+    const island = screen.getByRole('button', { name: 'Open PILL' });
+    expect(island).toHaveAttribute('data-theme', 'purple');
+    expect(island).toHaveAttribute('data-shape', 'panel');
+    expect(document.querySelector('.island__glass')).toHaveStyle({ opacity: 0.7 });
+    const { invoke } = await import('@tauri-apps/api/core');
+    expect(invoke).toHaveBeenCalledWith('resize_island', { width: 275, height: 50 });
+  });
+
+  it('opens quick settings with right click and closes them without collapsing', async () => {
+    render(<Island />);
+    fireEvent.contextMenu(screen.getByRole('button', { name: 'Open PILL' }));
+    expect(await screen.findByRole('dialog', { name: 'PILL quick settings' })).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(useIslandStore.getState().state).toBe('expanded');
+    expect(useIslandStore.getState().menuOpen).toBe(false);
   });
 
   it('opens with the keyboard even when pointer click expansion is disabled', async () => {
