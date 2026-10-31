@@ -257,6 +257,13 @@ describe('Island Component', () => {
     ).toBeInTheDocument();
   });
 
+  it('opens with the keyboard even when pointer click expansion is disabled', async () => {
+    useSettingsStore.getState().updateBehavior({ clickToExpand: false });
+    render(<Island />);
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Open PILL' }), { key: 'Enter' });
+    await waitFor(() => expect(screen.getByTestId('expanded-state')).toBeInTheDocument());
+  });
+
   it('transitions from idle to expanded state on mouse enter', async () => {
     render(<Island />);
 
