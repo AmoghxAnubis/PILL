@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import islandLayout from '../../../shared/island-layout.json';
+
+export type IslandModule = 'calendar' | 'media' | 'focusTimer' | 'telemetry';
 
 export type IslandState = 'idle' | 'compact' | 'expanded' | 'split';
 
@@ -7,6 +10,10 @@ interface IslandStore {
   visible: boolean;
   isEvasionActive: boolean;
   activeWidgets: string[];
+  selectedModule: IslandModule | null;
+  pinned: boolean;
+  selectModule: (module: IslandModule) => void;
+  setPinned: (pinned: boolean) => void;
 
   setState: (state: IslandState) => void;
   setVisible: (visible: boolean) => void;
@@ -19,24 +26,7 @@ interface IslandStore {
 export const ISLAND_DIMENSIONS: Record<
   IslandState,
   { width: number; height: number }
-> = {
-  idle: {
-    width: 44,
-    height: 14,
-  },
-  compact: {
-    width: 300,
-    height: 45,
-  },
-  expanded: {
-    width: 360,
-    height: 140,
-  },
-  split: {
-    width: 400,
-    height: 50,
-  },
-};
+> = islandLayout;
 
 export const SPRING_CONFIG = {
   type: 'spring' as const,
@@ -56,6 +46,10 @@ export const useIslandStore = create<IslandStore>((set) => ({
   visible: true,
   isEvasionActive: false,
   activeWidgets: [],
+  selectedModule: null,
+  pinned: false,
+  selectModule: (selectedModule) => set({ selectedModule }),
+  setPinned: (pinned) => set({ pinned }),
 
   setState: (state) => set({ state }),
 
