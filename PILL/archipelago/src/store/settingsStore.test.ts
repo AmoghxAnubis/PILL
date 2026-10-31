@@ -14,6 +14,12 @@ import {
 } from './settingsStore';
 
 describe('settingsStore', () => {
+  it('ignores a stale monitor or startup response after a newer save', () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_PILL_SETTINGS, revision: 5, appearance: { ...DEFAULT_PILL_SETTINGS.appearance, theme: 'blue' } } });
+    useSettingsStore.getState().setSettings({ ...DEFAULT_PILL_SETTINGS, revision: 4 });
+    expect(useSettingsStore.getState().settings.appearance.theme).toBe('blue');
+    expect(useSettingsStore.getState().settings.revision).toBe(5);
+  });
   beforeEach(() => {
     useSettingsStore.setState({
       settings: DEFAULT_PILL_SETTINGS,
