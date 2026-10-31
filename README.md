@@ -213,7 +213,7 @@ npm run tauri dev
 
 This launches the native Windows overlay. Use `npm run dev` only for the frontend development server; native media, timer and window commands require Tauri.
 
-The 0.2 development preview includes a local clock/calendar, Calendar/Media/Focus/System navigation, keyboard access and session pinning. Hover or click the clock to expand, use the tabs to change views, and press Escape to collapse. See [the next-version plan](PILL-NEXT-VERSION-PLAN.md) for implementation progress and remaining work.
+The 0.2 development preview includes clock/calendar and weather views, Media/Focus/System navigation, persistent pinning, and right-click quick settings for theme, shape, background opacity and size. Configure weather through the rebuilt PILL Control Weather section. Hover or click the clock to expand, use the tabs to change views, and press Escape to close quick settings or collapse. Update both preview applications together. See [the preview notes](docs/0.2-preview.md) and [the next-version plan](PILL-NEXT-VERSION-PLAN.md) for setup and remaining work.
 
 ### Run PILL Control
 
