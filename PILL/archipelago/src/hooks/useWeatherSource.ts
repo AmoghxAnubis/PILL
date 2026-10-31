@@ -35,7 +35,9 @@ export function useWeatherSource(): void {
       } catch (error) {
         if (disposed) return;
         failures += 1;
-        useWeatherStore.setState({ status: useWeatherStore.getState().data ? 'stale' : 'error', error: String(error) });
+        const cached = useWeatherStore.getState().data;
+        const usable = cached && Date.now() - cached.fetchedAt <= 24 * 60 * 60_000 ? cached : null;
+        useWeatherStore.setState({ data: usable, status: usable ? 'stale' : 'error', error: String(error) });
       } finally {
         if (!disposed) {
           useWeatherStore.setState({ refreshing: false });
