@@ -145,7 +145,7 @@ describe('CompactState', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('shows Archipelago when no media is available', () => {
+  it('shows PILL and the clock when no media is available', () => {
     mockedUseMedia.mockReturnValue({
       media: {
         ...defaultMedia,
@@ -163,7 +163,7 @@ describe('CompactState', () => {
 
     expect(
       screen.getByText(
-        'Archipelago',
+        'PILL',
       ),
     ).toBeInTheDocument();
 
