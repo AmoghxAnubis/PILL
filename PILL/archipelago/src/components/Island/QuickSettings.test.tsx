@@ -15,7 +15,7 @@ afterEach(cleanup);
 
 describe('persistent quick settings', () => {
   it('saves a partial update and renders the authoritative native result', async () => {
-    vi.mocked(invoke).mockImplementation((_command, args) => Promise.resolve({ ...mergeSettings(DEFAULT_PILL_SETTINGS, args?.patch as SettingsPatch), revision: 1 }) as ReturnType<typeof invoke>);
+    vi.mocked(invoke).mockImplementation((_command, args) => Promise.resolve({ ...mergeSettings(DEFAULT_PILL_SETTINGS, (args as { patch?: SettingsPatch } | undefined)?.patch ?? {}), revision: 1 }) as ReturnType<typeof invoke>);
     render(<QuickSettings onClose={() => {}} />);
     fireEvent.change(screen.getByLabelText('Theme'), { target: { value: 'purple' } });
     await waitFor(() => expect(screen.getByLabelText('Theme')).toHaveValue('purple'));
