@@ -1,0 +1,6 @@
+{
+  "idle": { "width": 220, "height": 40 },
+  "compact": { "width": 320, "height": 48 },
+  "expanded": { "width": 400, "height": 360 },
+  "split": { "width": 400, "height": 50 }
+}
