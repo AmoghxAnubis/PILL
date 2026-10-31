@@ -1,126 +1,28 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-} from 'react';
-
-import { invoke } from '@tauri-apps/api/core';
-
-import {
-  TAURI_EVENTS,
-  useTauriTypedEvent,
-} from '../lib/tauriEvents';
-
+import { useCallback, useEffect, useRef } from 'react';
+import { TAURI_EVENTS, useTauriTypedEvent } from '../lib/tauriEvents';
+import { synchronizeIslandWindow } from '../lib/islandCoordinator';
 import { useIslandStore } from '../store/islandStore';
+import { useSettingsStore } from '../store/settingsStore';
 
-import {
-  useSettingsStore,
-} from '../store/settingsStore';
-
-/**
- * Connects the fullscreen/evasion event from the native backend
- * to both React state and native window input behavior.
- */
+/** Fullscreen policy uses the same native queue as presentation transitions. */
 export function useEvasion() {
-  const setEvasionActive =
-    useIslandStore(
-      (state) => state.setEvasionActive,
-    );
+  const enabled = useSettingsStore((store) => store.settings.behavior.fullscreenEvasion);
+  const fullscreen = useRef(false);
+  const previousEnabled = useRef(enabled);
+  const applyEvasion = useCallback(async (active: boolean) => {
+    useIslandStore.getState().setEvasionActive(enabled && active);
+    await synchronizeIslandWindow();
+  }, [enabled]);
 
-  const fullscreenEvasionEnabled =
-    useSettingsStore(
-      (settingsState) =>
-        settingsState.settings.behavior
-          .fullscreenEvasion,
-    );
+  const handleFullscreen = useCallback(async (payload: { active: boolean }) => {
+    fullscreen.current = payload.active;
+    await applyEvasion(payload.active);
+  }, [applyEvasion]);
 
-  const fullscreenActiveRef =
-    useRef(false);
-
-  const previousEvasionSettingRef =
-    useRef(fullscreenEvasionEnabled);
-
-  const setClickThrough =
-    useCallback(async (
-      enabled: boolean,
-    ) => {
-      try {
-        await invoke(
-          'set_click_through',
-          {
-            enabled,
-          },
-        );
-      } catch (error) {
-        console.error(
-          '[Evasion] Failed to update native click-through:',
-          error,
-        );
-      }
-    }, []);
-
-  const handleFullscreenStateChanged =
-    useCallback(
-      async (
-        payload: {
-          active: boolean;
-        },
-      ) => {
-        fullscreenActiveRef.current =
-          payload.active;
-
-        const shouldEvade =
-          fullscreenEvasionEnabled &&
-          payload.active;
-
-        setEvasionActive(
-          shouldEvade,
-        );
-
-        await setClickThrough(
-          shouldEvade,
-        );
-      },
-      [
-        fullscreenEvasionEnabled,
-        setEvasionActive,
-        setClickThrough,
-      ],
-    );
-
-  useTauriTypedEvent(
-    TAURI_EVENTS.FULLSCREEN_STATE_CHANGED,
-    handleFullscreenStateChanged,
-  );
-
+  useTauriTypedEvent(TAURI_EVENTS.FULLSCREEN_STATE_CHANGED, handleFullscreen);
   useEffect(() => {
-    const previousSetting =
-      previousEvasionSettingRef.current;
-
-    if (
-      previousSetting ===
-      fullscreenEvasionEnabled
-    ) {
-      return;
-    }
-
-    previousEvasionSettingRef.current =
-      fullscreenEvasionEnabled;
-
-    const shouldEvade =
-      fullscreenEvasionEnabled &&
-      fullscreenActiveRef.current;
-
-    setEvasionActive(
-      shouldEvade,
-    );
-
-    void setClickThrough(
-      shouldEvade,
-    );
-  }, [
-    fullscreenEvasionEnabled,
-    setEvasionActive,
-    setClickThrough,
-  ]);
+    if (previousEnabled.current === enabled) return;
+    previousEnabled.current = enabled;
+    void applyEvasion(fullscreen.current);
+  }, [enabled, applyEvasion]);
 }
