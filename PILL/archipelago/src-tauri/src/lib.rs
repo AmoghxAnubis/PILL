@@ -363,6 +363,8 @@ pub fn run() {
                 pause_focus_timer,
                 reset_focus_timer,
                 settings::load_settings,
+                settings::update_settings,
+                settings::reset_settings,
             ],
         )
         .setup(|app| {
