@@ -17,8 +17,9 @@ fn read_cache(settings: &WeatherSettings) -> Option<WeatherSnapshot> {
     let location = settings.location.as_ref()?;
     let bytes = std::fs::read(storage::settings_directory().ok()?.join("weather-cache.json")).ok()?;
     let snapshot: WeatherSnapshot = serde_json::from_slice(&bytes).ok()?;
+    let now = now_millis();
     if snapshot.validate().is_ok() && snapshot.matches(location, settings.unit)
-        && snapshot.fetched_at <= now_millis() && now_millis() - snapshot.fetched_at <= MAX_CACHE_MS {
+        && snapshot.fetched_at <= now && now - snapshot.fetched_at <= MAX_CACHE_MS {
         Some(snapshot)
     } else { None }
 }
@@ -36,7 +37,7 @@ pub async fn get_weather() -> Result<WeatherSnapshot, String> {
     let _refresh = REFRESH.get_or_init(|| tokio::sync::Mutex::new(())).lock().await;
     let settings = configured()?;
     if let Some(snapshot) = read_cache(&settings) {
-        if now_millis() - snapshot.fetched_at < FRESH_MS { return Ok(snapshot); }
+        if now_millis().saturating_sub(snapshot.fetched_at) < FRESH_MS { return Ok(snapshot); }
     }
     let snapshot = provider::forecast(settings.location.clone().ok_or("Choose a city")?, settings.unit).await?;
     // Disabling/changing location while an HTTP request is in flight must not
