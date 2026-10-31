@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useIslandStore } from '../store/islandStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { persistPin } from '../lib/settingsActions';
 import {
   cancelCollapse, getCollapsedState, retainIslandCoordinator,
   scheduleIslandCollapse, transitionIsland,
@@ -34,7 +35,7 @@ export function useIslandState() {
 
   const handleCollapse = useCallback(() => {
     if (useIslandStore.getState().state !== 'expanded') return;
-    useIslandStore.getState().setPinned(false);
+    if (useIslandStore.getState().pinned) persistPin(false);
     void transitionIsland(getCollapsedState());
   }, []);
 
