@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -8,13 +9,17 @@ import {
   DEFAULT_PILL_SETTINGS,
   type PillSettings,
   type ThemeMode,
+  type SettingsPatch,
 } from '../../shared/settings/PillSettings';
 
 import {
   loadSettings,
-  saveSettings,
+  patchSettings,
+  resetSavedSettings,
 } from './lib/settingsApi';
 
+import { mergeSettings } from '../../shared/settings/merge';
+import { WeatherSettingsPanel } from './components/WeatherSettingsPanel';
 import './App.css';
 
 type Section =
@@ -22,7 +27,8 @@ type Section =
   | 'widgets'
   | 'behavior'
   | 'appearance'
-  | 'system';
+  | 'system'
+  | 'weather';
 
 const SECTION_LABELS: Record<Section, string> = {
   overview: 'Overview',
@@ -30,6 +36,7 @@ const SECTION_LABELS: Record<Section, string> = {
   behavior: 'Behavior',
   appearance: 'Appearance',
   system: 'System',
+  weather: 'Weather',
 };
 
 interface SettingToggleProps {
@@ -85,6 +92,7 @@ function SectionIcon({
     behavior: '◌',
     appearance: '◐',
     system: '⚙',
+    weather: '☀',
   };
 
   return (
@@ -105,6 +113,10 @@ function App() {
     useState<PillSettings>(
       DEFAULT_PILL_SETTINGS,
     );
+
+  const saveGeneration = useRef(0);
+  const pendingWrites = useRef(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [settingsLoaded, setSettingsLoaded] =
     useState(false);
@@ -133,6 +145,8 @@ function App() {
       setSettings(loadedSettings);
       setSettingsLoaded(true);
       setSaveStatus('saved');
+    }).catch((error) => {
+      if (mounted) { setErrorMessage(String(error)); setSaveStatus('error'); }
     });
 
     return () => {
@@ -148,112 +162,47 @@ function App() {
     [settings.widgets],
   );
 
-  /*
-   * Update local state immediately, then persist the
-   * exact same settings object through the Tauri API.
-   */
-  const commitSettings = (
-    nextSettings: PillSettings,
-  ) => {
-    setSettings(nextSettings);
-    setSaveStatus('saving');
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    let mounted = true;
+    const timer = setInterval(() => {
+      if (pendingWrites.current > 0) return;
+      void loadSettings().then((incoming) => {
+        if (mounted && pendingWrites.current === 0) setSettings((current) => incoming.revision > current.revision ? incoming : current);
+      }).catch(() => { /* Preserve the last valid settings if a read fails. */ });
+    }, 500);
+    return () => { mounted = false; clearInterval(timer); };
+  }, [settingsLoaded]);
 
-    void saveSettings(nextSettings)
-      .then(() => {
-        setSaveStatus('saved');
-      })
-      .catch((error) => {
-        console.error(
-          '[PILL Control] Failed to save settings:',
-          error,
-        );
-
-        setSaveStatus('error');
-      });
+  const commitSettings = (patch: SettingsPatch) => {
+    if (!settingsLoaded) return;
+    const generation = ++saveGeneration.current;
+    pendingWrites.current += 1;
+    setSettings((current) => mergeSettings(current, patch));
+    setSaveStatus('saving'); setErrorMessage(null);
+    void patchSettings(patch).then((saved) => {
+      if (generation === saveGeneration.current) { setSettings(saved); setSaveStatus('saved'); }
+    }).catch((error) => {
+      if (generation === saveGeneration.current) { setSaveStatus('error'); setErrorMessage(String(error)); }
+      void loadSettings().then((saved) => {
+        if (generation === saveGeneration.current) setSettings(saved);
+      }).catch(() => {});
+    }).finally(() => { pendingWrites.current -= 1; });
   };
-
-  const updateWidgets = (
-    updates: Partial<PillSettings['widgets']>,
-  ) => {
-    if (!settingsLoaded) {
-      return;
-    }
-
-    const nextSettings: PillSettings = {
-      ...settings,
-      widgets: {
-        ...settings.widgets,
-        ...updates,
-      },
-    };
-
-    commitSettings(nextSettings);
-  };
-
-  const updateBehavior = (
-    updates: Partial<PillSettings['behavior']>,
-  ) => {
-    if (!settingsLoaded) {
-      return;
-    }
-
-    const nextSettings: PillSettings = {
-      ...settings,
-      behavior: {
-        ...settings.behavior,
-        ...updates,
-      },
-    };
-
-    commitSettings(nextSettings);
-  };
-
-  const updateAppearance = (
-    updates: Partial<
-      PillSettings['appearance']
-    >,
-  ) => {
-    if (!settingsLoaded) {
-      return;
-    }
-
-    const nextSettings: PillSettings = {
-      ...settings,
-      appearance: {
-        ...settings.appearance,
-        ...updates,
-      },
-    };
-
-    commitSettings(nextSettings);
-  };
-
-  const updateSystem = (
-    updates: Partial<PillSettings['system']>,
-  ) => {
-    if (!settingsLoaded) {
-      return;
-    }
-
-    const nextSettings: PillSettings = {
-      ...settings,
-      system: {
-        ...settings.system,
-        ...updates,
-      },
-    };
-
-    commitSettings(nextSettings);
-  };
-
+  const updateWidgets = (widgets: Partial<PillSettings['widgets']>) => commitSettings({ widgets });
+  const updateBehavior = (behavior: Partial<PillSettings['behavior']>) => commitSettings({ behavior });
+  const updateAppearance = (appearance: Partial<PillSettings['appearance']>) => commitSettings({ appearance });
+  const updateSystem = (system: Partial<PillSettings['system']>) => commitSettings({ system });
   const resetSettings = () => {
-    if (!settingsLoaded) {
-      return;
-    }
-
-    commitSettings(
-      DEFAULT_PILL_SETTINGS,
-    );
+    if (!settingsLoaded) return;
+    const generation = ++saveGeneration.current;
+    pendingWrites.current += 1;
+    setSaveStatus('saving'); setErrorMessage(null);
+    void resetSavedSettings().then((saved) => {
+      if (generation === saveGeneration.current) { setSettings(saved); setSaveStatus('saved'); }
+    }).catch((error) => {
+      if (generation === saveGeneration.current) { setSaveStatus('error'); setErrorMessage(String(error)); }
+    }).finally(() => { pendingWrites.current -= 1; });
   };
 
   const renderOverview = () => (
@@ -534,6 +483,8 @@ function App() {
       </div>
 
       <div className="settings-card">
+        <SettingToggle checked={settings.behavior.pinExpanded} onChange={() => updateBehavior({ pinExpanded: !settings.behavior.pinExpanded })} label="Keep expanded" description="Keep the island open until you unpin or explicitly collapse it. This preference is saved." />
+
         <SettingToggle
           checked={
             settings.behavior.hoverToExpand
@@ -675,8 +626,16 @@ function App() {
             <option value="dark">Dark</option>
             <option value="light">Light</option>
             <option value="system">System</option>
+            <option value="graphite">Graphite</option>
+            <option value="blue">Midnight blue</option>
+            <option value="purple">Deep purple</option>
+            <option value="fluent">Fluent inspired</option>
           </select>
         </div>
+
+        <div className="setting-row"><label className="setting-row__label" htmlFor="island-shape">Shape</label><select id="island-shape" className="select-control" value={settings.appearance.shape} disabled={!settingsLoaded} onChange={(event) => updateAppearance({ shape: event.target.value as PillSettings['appearance']['shape'] })}><option value="pill">Pill</option><option value="panel">Windows-style panel</option></select></div>
+        <div className="setting-row"><label className="setting-row__label" htmlFor="island-opacity">Background opacity</label><select id="island-opacity" className="select-control" value={settings.appearance.opacity} disabled={!settingsLoaded} onChange={(event) => updateAppearance({ opacity: Number(event.target.value) })}>{[1, 0.85, 0.7, 0.55].map((value) => <option key={value} value={value}>{Math.round(value * 100)}%</option>)}</select></div>
+        <div className="setting-row"><label className="setting-row__label" htmlFor="island-scale">Island size</label><select id="island-scale" className="select-control" value={settings.appearance.scale} disabled={!settingsLoaded} onChange={(event) => updateAppearance({ scale: Number(event.target.value) })}>{[0.85, 1, 1.1, 1.25].map((value) => <option key={value} value={value}>{Math.round(value * 100)}%</option>)}</select></div>
 
         <SettingToggle
           checked={
@@ -781,6 +740,9 @@ function App() {
       case 'system':
         return renderSystem();
 
+      case 'weather':
+        return <WeatherSettingsPanel settings={settings.weather} disabled={!settingsLoaded} onChange={(weather) => commitSettings({ weather })} />;
+
       default:
         return renderWidgets();
     }
@@ -866,16 +828,16 @@ function App() {
               }`}
             />
 
-            {!settingsLoaded
+            {saveStatus === 'error' ? 'Settings unavailable'
+              : !settingsLoaded
               ? 'Loading settings'
               : saveStatus === 'saving'
                 ? 'Saving'
-                : saveStatus === 'error'
-                  ? 'Save failed'
-                  : 'Saved locally'}
+                : 'Saved locally'}
           </div>
         </header>
 
+        {errorMessage && <p role="alert" className="settings-error">{errorMessage}</p>}
         {renderSection()}
       </main>
     </div>
