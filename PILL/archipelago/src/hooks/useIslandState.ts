@@ -1,330 +1,45 @@
+import { useCallback, useEffect } from 'react';
+import { useIslandStore } from '../store/islandStore';
+import { useSettingsStore } from '../store/settingsStore';
 import {
-  useCallback,
-  useRef,
-} from 'react';
-
-import { invoke } from '@tauri-apps/api/core';
-
-import {
-  recordNativeResize,
-} from '../lib/perfDiagnostics';
-
-import {
-  useIslandStore,
-  ISLAND_DIMENSIONS,
-  type IslandState,
-} from '../store/islandStore';
-
-import { useWidgetStore } from '../store/widgetStore';
-
-import {
-  useSettingsStore,
-} from '../store/settingsStore';
+  cancelCollapse, getCollapsedState, retainIslandCoordinator,
+  scheduleIslandCollapse, transitionIsland,
+} from '../lib/islandCoordinator';
 
 export function useIslandState() {
-  const setState = useIslandStore(
-    (islandState) => islandState.setState,
-  );
-
-  const activeWidgets = useWidgetStore(
-    (widgetState) => widgetState.activeWidgets,
-  );
-
-  const widgetSettings = useSettingsStore(
-    (settingsState) =>
-      settingsState.settings.widgets,
-  );
-
-  const hoverToExpand = useSettingsStore(
-    (settingsState) =>
-      settingsState.settings.behavior
-        .hoverToExpand,
-  );
-
-  const clickToExpand = useSettingsStore(
-    (settingsState) =>
-      settingsState.settings.behavior
-        .clickToExpand,
-  );
-
-  const autoCollapse = useSettingsStore(
-    (settingsState) =>
-      settingsState.settings.behavior
-        .autoCollapse,
-  );
-
-  const collapseTimerRef =
-    useRef<ReturnType<typeof setTimeout> | null>(
-      null,
-    );
-
-  /*
-   * The latest requested island state.
-   *
-   * React state can lag behind rapid event sequences, so
-   * native synchronization uses this ref as the source of
-   * truth for the most recent requested state.
-   */
-  const requestedStateRef =
-    useRef<IslandState | null>(null);
-
-  /*
-   * Only one native synchronization loop may run at a time.
-   */
-  const nativeSyncRef =
-    useRef<Promise<void> | null>(null);
-
-  const getCollapsedState =
-    useCallback((): IslandState => {
-      const enabledActiveWidgets =
-        activeWidgets.filter(
-          (widgetId) =>
-            widgetSettings[widgetId],
-        );
-
-      if (enabledActiveWidgets.length === 0) {
-        return 'idle';
-      }
-
-      if (enabledActiveWidgets.length === 1) {
-        return 'compact';
-      }
-
-      return 'split';
-    }, [
-      activeWidgets,
-      widgetSettings,
-    ]);
-
-  const synchronizeNativeState =
-    useCallback(async () => {
-      if (nativeSyncRef.current) {
-        return;
-      }
-
-      const run = async () => {
-        while (
-          requestedStateRef.current !== null
-        ) {
-          const targetState =
-            requestedStateRef.current;
-
-          requestedStateRef.current = null;
-
-          const dims =
-            ISLAND_DIMENSIONS[targetState];
-
-          try {
-            recordNativeResize();
-
-            await invoke('resize_island', {
-              width: dims.width,
-              height: dims.height,
-            });
-
-            /*
-             * A newer transition arrived while the
-             * resize was in flight. Do not apply stale
-             * click-through or notification state.
-             */
-            if (
-              requestedStateRef.current !== null
-            ) {
-              continue;
-            }
-
-            await invoke('set_click_through', {
-              enabled: false,
-            });
-
-            if (
-              requestedStateRef.current !== null
-            ) {
-              continue;
-            }
-
-            await invoke(
-              'notify_state_change',
-              {
-                state: targetState,
-              },
-            );
-          } catch (err) {
-            console.error(
-              '[Island] Failed to sync native state:',
-              err,
-            );
-          }
-        }
-      };
-
-      const promise = run();
-
-      nativeSyncRef.current = promise;
-
-      try {
-        await promise;
-      } finally {
-        nativeSyncRef.current = null;
-
-        /*
-         * A transition may have arrived just after
-         * the loop finished its final iteration.
-         */
-        if (
-          requestedStateRef.current !== null
-        ) {
-          void synchronizeNativeState();
-        }
-      }
-    }, []);
-
-  const transitionTo = useCallback(
-    async (newState: IslandState) => {
-      if (collapseTimerRef.current) {
-        clearTimeout(
-          collapseTimerRef.current,
-        );
-
-        collapseTimerRef.current = null;
-      }
-
-      const currentState =
-        useIslandStore.getState().state;
-
-      if (currentState === newState) {
-        return;
-      }
-
-      /*
-       * Update React/store state immediately so the UI
-       * responds without waiting for native IPC.
-       */
-      setState(newState);
-
-      /*
-       * Record the latest state requested by the UI.
-       * Native synchronization will always converge on
-       * the newest request.
-       */
-      requestedStateRef.current = newState;
-
-      void synchronizeNativeState();
-    },
-    [
-      setState,
-      synchronizeNativeState,
-    ],
-  );
-
-  const scheduleCollapse = useCallback(
-    (delayMs: number = 2000) => {
-      if (collapseTimerRef.current) {
-        clearTimeout(
-          collapseTimerRef.current,
-        );
-      }
-
-      collapseTimerRef.current =
-        setTimeout(() => {
-          void transitionTo(
-            getCollapsedState(),
-          );
-        }, delayMs);
-    },
-    [
-      getCollapsedState,
-      transitionTo,
-    ],
-  );
+  useEffect(retainIslandCoordinator, []);
+  const state = useIslandStore((island) => island.state);
+  const hoverToExpand = useSettingsStore((store) => store.settings.behavior.hoverToExpand);
+  const clickToExpand = useSettingsStore((store) => store.settings.behavior.clickToExpand);
+  const autoCollapse = useSettingsStore((store) => store.settings.behavior.autoCollapse);
+  const collapseDelayMs = useSettingsStore((store) => store.settings.behavior.collapseDelayMs);
+  useEffect(() => { if (!autoCollapse) cancelCollapse(); }, [autoCollapse]);
 
   const handleMouseEnter = useCallback(() => {
-    if (!hoverToExpand) {
-      return;
-    }
-
-    const currentState =
-      useIslandStore.getState().state;
-
-    /*
-     * Hovering over any collapsed presentation
-     * expands the island directly.
-     */
-    if (
-      currentState === 'idle' ||
-      currentState === 'compact' ||
-      currentState === 'split'
-    ) {
-      void transitionTo('expanded');
-    }
-  }, [
-    hoverToExpand,
-    transitionTo,
-  ]);
+    // Re-entering an already expanded island cancels any caller's collapse.
+    cancelCollapse();
+    if (hoverToExpand) void transitionIsland('expanded');
+  }, [hoverToExpand]);
 
   const handleMouseLeave = useCallback(() => {
-    if (!autoCollapse) {
-      return;
-    }
-
-    const currentState =
-      useIslandStore.getState().state;
-
-    if (
-      currentState === 'expanded' ||
-      currentState === 'compact'
-    ) {
-      void transitionTo(
-        getCollapsedState(),
-      );
-    }
-  }, [
-    autoCollapse,
-    getCollapsedState,
-    transitionTo,
-  ]);
+    if (!autoCollapse || useIslandStore.getState().pinned) return;
+    scheduleIslandCollapse(collapseDelayMs);
+  }, [autoCollapse, collapseDelayMs]);
 
   const handleClick = useCallback(() => {
-    if (!clickToExpand) {
-      return;
+    if (clickToExpand && useIslandStore.getState().state !== 'expanded') {
+      void transitionIsland('expanded');
     }
-
-    const currentState =
-      useIslandStore.getState().state;
-
-    if (currentState === 'compact') {
-      void transitionTo('expanded');
-    }
-  }, [
-    clickToExpand,
-    transitionTo,
-  ]);
+  }, [clickToExpand]);
 
   const handleCollapse = useCallback(() => {
-    const currentState =
-      useIslandStore.getState().state;
-
-    if (currentState === 'expanded') {
-      void transitionTo(
-        getCollapsedState(),
-      );
-    }
-  }, [
-    getCollapsedState,
-    transitionTo,
-  ]);
+    if (useIslandStore.getState().state !== 'expanded') return;
+    useIslandStore.getState().setPinned(false);
+    void transitionIsland(getCollapsedState());
+  }, []);
 
   return {
-    state:
-      useIslandStore(
-        (islandState) =>
-          islandState.state,
-      ),
-    transitionTo,
-    scheduleCollapse,
-    handleMouseEnter,
-    handleMouseLeave,
-    handleClick,
-    handleCollapse,
+    state, transitionTo: transitionIsland, scheduleCollapse: scheduleIslandCollapse,
+    handleMouseEnter, handleMouseLeave, handleClick, handleCollapse,
   };
 }
