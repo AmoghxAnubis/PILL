@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import islandLayout from '../../../shared/island-layout.json';
 
-export type IslandModule = 'calendar' | 'media' | 'focusTimer' | 'telemetry';
+export type IslandModule = 'calendar' | 'media' | 'focusTimer' | 'telemetry' | 'weather';
 
 export type IslandState = 'idle' | 'compact' | 'expanded' | 'split';
 
@@ -12,6 +12,8 @@ interface IslandStore {
   activeWidgets: string[];
   selectedModule: IslandModule | null;
   pinned: boolean;
+  menuOpen: boolean;
+  setMenuOpen: (open: boolean) => void;
   selectModule: (module: IslandModule) => void;
   setPinned: (pinned: boolean) => void;
 
@@ -48,6 +50,8 @@ export const useIslandStore = create<IslandStore>((set) => ({
   activeWidgets: [],
   selectedModule: null,
   pinned: false,
+  menuOpen: false,
+  setMenuOpen: (menuOpen) => set({ menuOpen }),
   selectModule: (selectedModule) => set({ selectedModule }),
   setPinned: (pinned) => set({ pinned }),
 
