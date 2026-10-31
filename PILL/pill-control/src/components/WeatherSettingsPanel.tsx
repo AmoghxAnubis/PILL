@@ -43,7 +43,7 @@ export function WeatherSettingsPanel({ settings, disabled, onChange }: {
         {searched && results.length === 0 && <p className="weather-search__empty" role="status">No cities found. Try including a country or region.</p>}
         <ul className="weather-search__results" aria-label="Matching cities">{results.map((location) => <li key={location.id}><button type="button" disabled={disabled} aria-pressed={settings.location?.id === location.id} onClick={() => onChange({ location, enabled: true })}><strong>{location.name}</strong><span>{[location.region, location.country].filter(Boolean).join(', ')}</span></button></li>)}</ul>
       </div>
-      <div className="info-banner"><span>Weather data: Open-Meteo, CC BY 4.0. The bundled free endpoint is for non-commercial use. Forecasts refresh about every 15 minutes; cached readings are labelled if offline.</span></div>
+      <div className="info-banner"><span>Weather: open-meteo.com · City data: geonames.org · License: creativecommons.org/licenses/by/4.0/. The bundled free endpoint is for non-commercial use. Forecasts refresh about every 15 minutes; cached readings are labelled if offline.</span></div>
     </div>
   );
 }
