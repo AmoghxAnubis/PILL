@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useIslandStore } from './islandStore';
 
 import {
   DEFAULT_PILL_SETTINGS,
@@ -7,6 +8,9 @@ import {
 
 interface SettingsStore {
   settings: PillSettings;
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  saveError: string | null;
+  loadError: string | null;
 
   setSettings: (
     settings: PillSettings,
@@ -34,9 +38,16 @@ interface SettingsStore {
 export const useSettingsStore =
   create<SettingsStore>((set) => ({
     settings: DEFAULT_PILL_SETTINGS,
+    saveStatus: 'idle',
+    saveError: null,
+    loadError: null,
 
     setSettings: (settings) => {
-      set({ settings });
+      set((current) => {
+        if (settings.revision < current.settings.revision) return current;
+        useIslandStore.getState().setPinned(settings.behavior.pinExpanded);
+        return { settings, loadError: null };
+      });
     },
 
     updateWidgets: (widgets) => {
