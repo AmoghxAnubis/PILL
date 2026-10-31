@@ -7,6 +7,7 @@ export const ISLAND_MODULES: ReadonlyArray<{
   widget?: keyof WidgetSettings;
 }> = [
   { id: 'calendar', label: 'Calendar' },
+  { id: 'weather', label: 'Weather' },
   { id: 'media', label: 'Media', widget: 'media' },
   { id: 'focusTimer', label: 'Focus', widget: 'focusTimer' },
   { id: 'telemetry', label: 'System', widget: 'telemetry' },
