@@ -322,8 +322,9 @@ fn position_island_on_startup(
         let scale_factor = monitor.scale_factor();
 
         let idle = island_dimensions("idle");
-        let idle_width = idle.width;
-        let idle_height = idle.height;
+        let scale = settings::storage::load().map(|settings| settings.appearance.scale).unwrap_or(1.0);
+        let idle_width = idle.width * scale;
+        let idle_height = idle.height * scale;
 
         let position =
             calculate_window_position(
