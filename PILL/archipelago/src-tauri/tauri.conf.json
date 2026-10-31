@@ -15,8 +15,9 @@
       {
         "label": "island",
         "title": "",
-        "width": 110,
-        "height": 32,
+        "width": 220,
+        "height": 40,
+        "visible": false,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
