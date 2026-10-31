@@ -280,6 +280,15 @@ describe('Island Component', () => {
     expect(useIslandStore.getState().menuOpen).toBe(false);
   });
 
+  it('dismisses quick settings when another window receives focus', async () => {
+    render(<Island />);
+    fireEvent.contextMenu(screen.getByRole('button', { name: 'Open PILL' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    fireEvent(window, new Event('blur'));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(useIslandStore.getState().menuOpen).toBe(false);
+  });
+
   it('opens with the keyboard even when pointer click expansion is disabled', async () => {
     useSettingsStore.getState().updateBehavior({ clickToExpand: false });
     render(<Island />);
