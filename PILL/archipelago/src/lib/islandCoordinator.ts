@@ -44,7 +44,9 @@ export function synchronizeIslandWindow(resize = false): Promise<void> {
       try {
         if (request.resize) {
           recordNativeResize();
-          await invoke('resize_island', ISLAND_DIMENSIONS[snapshot.state]);
+          const scale = useSettingsStore.getState().settings.appearance.scale;
+          const dimensions = ISLAND_DIMENSIONS[snapshot.state];
+          await invoke('resize_island', { width: dimensions.width * scale, height: dimensions.height * scale });
           // A new presentation must resize again; evasion-only requests need
           // only restore input policy after this in-flight resize completes.
           if (pending !== null) continue;
@@ -82,6 +84,6 @@ export function scheduleIslandCollapse(delayMs = 2000): void {
   collapseTimer = setTimeout(() => {
     collapseTimer = null;
     // Read live stores here: widgets/settings may change while the timer waits.
-    if (!useIslandStore.getState().pinned) void transitionIsland(getCollapsedState());
+    if (!useIslandStore.getState().pinned && !useIslandStore.getState().menuOpen) void transitionIsland(getCollapsedState());
   }, delayMs);
 }
