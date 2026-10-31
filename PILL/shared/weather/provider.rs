@@ -118,6 +118,18 @@ pub async fn forecast(location: WeatherLocation, unit: TemperatureUnit) -> Resul
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    #[ignore = "requires an internet connection and live Open-Meteo endpoints"]
+    fn live_weather_smoke() {
+        tauri::async_runtime::block_on(async {
+            let locations = search("Berlin, Germany".into()).await.expect("City search failed");
+            assert!(!locations.is_empty());
+            let data = forecast(locations[0].clone(), TemperatureUnit::Celsius).await.expect("Forecast failed");
+            data.validate().unwrap();
+            assert!(data.fetched_at > 0 && data.observed_at > 0);
+            println!("Live weather lookup succeeded for {}", data.location.name);
+        });
+    }
     fn location() -> WeatherLocation { WeatherLocation { id: 1, name: "Test City".into(), region: String::new(), country: "Test".into(), latitude: 10.0, longitude: 20.0 } }
     #[test]
     fn maps_actual_provider_fields_and_preserves_units() {
