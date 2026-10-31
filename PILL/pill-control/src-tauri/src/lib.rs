@@ -17,7 +17,8 @@ pub fn run() {
         .invoke_handler(
             tauri::generate_handler![
                 settings::load_settings,
-                settings::save_settings
+                settings::update_settings,
+                settings::reset_settings
             ],
         )
         .run(tauri::generate_context!())
