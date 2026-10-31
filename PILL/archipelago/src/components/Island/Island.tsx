@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
 } from 'react';
 
 import {
@@ -12,6 +13,8 @@ import {
   startPerfDiagnostics,
 } from '../../lib/perfDiagnostics';
 
+import { useWeatherSource } from '../../hooks/useWeatherSource';
+import { QuickSettings } from './QuickSettings';
 import { useEvasion } from '../../hooks/useEvasion';
 import { useDesktopPreferences } from '../../hooks/useDesktopPreferences';
 import { cancelCollapse, synchronizeIslandWindow } from '../../lib/islandCoordinator';
@@ -46,6 +49,7 @@ const INSTANT_TRANSITION = {
 
 export function Island() {
   recordReactRender();
+  const islandRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     return startPerfDiagnostics();
@@ -64,16 +68,20 @@ export function Island() {
   useFeatureSources();
   useFeatureCoordinator();
   useSettingsSource();
+  useWeatherSource();
   useWidgetLayoutSync();
 
   const {
     state,
     visible,
     isEvasionActive,
+    menuOpen,
   } = useIslandStore();
 
   const preferences = useDesktopPreferences();
-  const theme = useSettingsStore((store) => store.settings.appearance.theme);
+  const appearance = useSettingsStore((store) => store.settings.appearance);
+  const theme = appearance.theme;
+  const pinExpanded = useSettingsStore((store) => store.settings.behavior.pinExpanded);
   const animationsEnabled =
     useSettingsStore(
       (settingsState) =>
@@ -91,6 +99,26 @@ export function Island() {
     handleClick,
     handleCollapse,
   } = useIslandState();
+
+  const openQuickSettings = () => {
+    cancelCollapse();
+    useIslandStore.getState().setMenuOpen(true);
+    void transitionTo('expanded');
+  };
+  const closeQuickSettings = () => {
+    useIslandStore.getState().setMenuOpen(false);
+    queueMicrotask(() => islandRef.current?.focus());
+  };
+
+  useEffect(() => {
+    if (pinExpanded) void transitionTo('expanded');
+  }, [pinExpanded, transitionTo]);
+
+  useEffect(() => useSettingsStore.subscribe((current, previous) => {
+    if (current.settings.appearance.scale !== previous.settings.appearance.scale) void synchronizeIslandWindow(true);
+  }), []);
+
+  useEffect(() => { if (isEvasionActive) useIslandStore.getState().setMenuOpen(false); }, [isEvasionActive]);
 
   const shouldShowIsland =
     isIslandVisible(
@@ -117,7 +145,10 @@ export function Island() {
   return (
     <div className="island-wrapper">
       <motion.div
+        ref={islandRef}
         className={`island island--${state}`}
+        data-shape={appearance.shape}
+        onContextMenu={(event) => { event.preventDefault(); openQuickSettings(); }}
         role={state === 'expanded' ? 'region' : 'button'}
         aria-label={state === 'expanded' ? 'PILL dashboard' : 'Open PILL'}
         aria-expanded={state === 'expanded'}
@@ -143,20 +174,23 @@ export function Island() {
         }}
         transition={islandTransition}
         style={{
+          zoom: appearance.scale,
           pointerEvents: shouldShowIsland
             ? 'auto'
             : 'none',
         }}
         onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        onMouseLeave={() => { if (!menuOpen) handleMouseLeave(); }}
         onFocusCapture={cancelCollapse}
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) handleMouseLeave();
         }}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') {
+          if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+            event.preventDefault(); openQuickSettings();
+          } else if (event.key === 'Escape') {
             event.stopPropagation();
-            handleCollapse();
+            if (menuOpen) closeQuickSettings(); else handleCollapse();
           } else if (state !== 'expanded' && event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
             event.preventDefault();
             void transitionTo('expanded');
@@ -168,10 +202,10 @@ export function Island() {
             : undefined
         }
       >
-        <div className="island__glass" />
+        <div className="island__glass" style={{ opacity: appearance.opacity }} />
 
         <div className="island__content">
-          <AnimatePresence mode="wait">
+          {menuOpen ? <QuickSettings onClose={closeQuickSettings} /> : <AnimatePresence mode="wait">
             {state === 'idle' && (
               <motion.div
                 key="idle"
@@ -272,7 +306,7 @@ export function Island() {
                 />
               </motion.div>
             )}
-          </AnimatePresence>
+          </AnimatePresence>}
         </div>
       </motion.div>
     </div>
