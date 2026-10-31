@@ -208,8 +208,12 @@ cd PILL
 ```powershell
 cd PILL/archipelago
 npm install
-npm run dev
+npm run tauri dev
 ```
+
+This launches the native Windows overlay. Use `npm run dev` only for the frontend development server; native media, timer and window commands require Tauri.
+
+The 0.2 development preview includes a local clock/calendar, Calendar/Media/Focus/System navigation, keyboard access and session pinning. Hover or click the clock to expand, use the tabs to change views, and press Escape to collapse. See [the next-version plan](PILL-NEXT-VERSION-PLAN.md) for implementation progress and remaining work.
 
 ### Run PILL Control
 
