@@ -13,6 +13,8 @@ import {
 } from '../../lib/perfDiagnostics';
 
 import { useEvasion } from '../../hooks/useEvasion';
+import { useDesktopPreferences } from '../../hooks/useDesktopPreferences';
+import { cancelCollapse, synchronizeIslandWindow } from '../../lib/islandCoordinator';
 import { useFeatureCoordinator } from '../../hooks/useFeatureCoordinator';
 import { useFeatureSources } from '../../hooks/useFeatureSources';
 import { useIslandState } from '../../hooks/useIslandState';
@@ -33,7 +35,7 @@ import {
 
 import { IdleState } from '../states/IdleState';
 import { CompactState } from '../states/CompactState';
-import { ExpandedState } from '../states/ExpandedState';
+import { ModuleDashboard } from '../modules/ModuleDashboard';
 import { SplitState } from '../states/SplitState';
 
 import './Island.css';
@@ -49,6 +51,15 @@ export function Island() {
     return startPerfDiagnostics();
   }, []);
 
+  useEffect(() => {
+    void synchronizeIslandWindow(true);
+    return useIslandStore.subscribe((current, previous) => {
+      if (current.visible !== previous.visible || current.isEvasionActive !== previous.isEvasionActive) {
+        void synchronizeIslandWindow();
+      }
+    });
+  }, []);
+
   useEvasion();
   useFeatureSources();
   useFeatureCoordinator();
@@ -61,12 +72,14 @@ export function Island() {
     isEvasionActive,
   } = useIslandStore();
 
+  const preferences = useDesktopPreferences();
+  const theme = useSettingsStore((store) => store.settings.appearance.theme);
   const animationsEnabled =
     useSettingsStore(
       (settingsState) =>
         settingsState.settings.appearance
           .animations,
-    );
+    ) && !preferences.reducedMotion;
 
   const widgetOrchestration =
     useWidgetOrchestrator();
@@ -104,6 +117,12 @@ export function Island() {
     <div className="island-wrapper">
       <motion.div
         className={`island island--${state}`}
+        role={state === 'expanded' ? 'region' : 'button'}
+        aria-label={state === 'expanded' ? 'PILL dashboard' : 'Open PILL'}
+        aria-expanded={state === 'expanded'}
+        inert={!shouldShowIsland}
+        tabIndex={shouldShowIsland ? 0 : -1}
+        data-theme={theme === 'system' ? (preferences.light ? 'light' : 'dark') : theme}
         layout={animationsEnabled}
         data-widget-layout={
           widgetOrchestration.layout
@@ -129,8 +148,21 @@ export function Island() {
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onFocusCapture={cancelCollapse}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) handleMouseLeave();
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            event.stopPropagation();
+            handleCollapse();
+          } else if (state !== 'expanded' && event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            handleClick();
+          }
+        }}
         onClick={
-          state === 'compact'
+          state !== 'expanded'
             ? handleClick
             : undefined
         }
@@ -205,7 +237,7 @@ export function Island() {
                 }}
                 transition={contentTransition}
               >
-                <ExpandedState
+                <ModuleDashboard
                   onCollapse={handleCollapse}
                   widgetOrchestration={
                     widgetOrchestration
