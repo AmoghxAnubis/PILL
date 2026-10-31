@@ -1,4 +1,5 @@
 mod settings;
+mod weather;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -19,6 +20,7 @@ pub fn run() {
                 settings::load_settings,
                 settings::update_settings,
                 settings::reset_settings
+                , weather::search_weather_locations
             ],
         )
         .run(tauri::generate_context!())
