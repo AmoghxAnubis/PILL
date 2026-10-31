@@ -17,6 +17,7 @@ pub mod focus_timer;
 pub mod media;
 pub mod telemetry;
 pub mod settings;
+mod weather;
 
 mod hwnd_controller;
 
@@ -190,6 +191,20 @@ fn notify_state_change(
     Ok(())
 }
 
+#[tauri::command]
+fn open_control(app: AppHandle) -> Result<(), String> {
+    let mut candidates = Vec::new();
+    if let Ok(directory) = app.path().resource_dir() { candidates.push(directory.join("PILL-Control.exe")); }
+    if let Ok(executable) = std::env::current_exe() {
+        if let Some(directory) = executable.parent() { candidates.push(directory.join("PILL-Control.exe")); }
+    }
+    #[cfg(debug_assertions)]
+    candidates.push(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../pill-control/src-tauri/target/release/PILL-Control.exe"));
+    let path = candidates.into_iter().find(|path| path.is_file()).ok_or("PILL Control is not installed alongside PILL. Build or reinstall PILL Control.")?;
+    std::process::Command::new(path).spawn().map_err(|error| format!("Could not open PILL Control: {error}"))?;
+    Ok(())
+}
+
 /// Control the active Windows media session.
 #[tauri::command]
 async fn media_skip_previous()
@@ -354,6 +369,7 @@ pub fn run() {
         .invoke_handler(
             tauri::generate_handler![
                 resize_island,
+                open_control,
                 set_click_through,
                 notify_state_change,
                 media_skip_previous,
@@ -365,6 +381,8 @@ pub fn run() {
                 settings::load_settings,
                 settings::update_settings,
                 settings::reset_settings,
+                weather::get_weather,
+                weather::load_cached_weather,
             ],
         )
         .setup(|app| {
