@@ -120,6 +120,16 @@ export function Island() {
 
   useEffect(() => { if (isEvasionActive) useIslandStore.getState().setMenuOpen(false); }, [isEvasionActive]);
 
+  useEffect(() => {
+    const dismissMenu = () => {
+      if (!useIslandStore.getState().menuOpen) return;
+      useIslandStore.getState().setMenuOpen(false);
+      handleMouseLeave();
+    };
+    window.addEventListener('blur', dismissMenu);
+    return () => window.removeEventListener('blur', dismissMenu);
+  }, [handleMouseLeave]);
+
   const shouldShowIsland =
     isIslandVisible(
       visible,
