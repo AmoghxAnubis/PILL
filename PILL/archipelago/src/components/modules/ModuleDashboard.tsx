@@ -19,6 +19,7 @@ export function ModuleDashboard({ onCollapse, widgetOrchestration }: {
   const current = modules.find((module) => module.id === requested) ?? modules[0];
   const cpu = useTelemetryStore((store) => store.cpu);
   const ram = useTelemetryStore((store) => store.ram);
+  const hasSample = useTelemetryStore((store) => store.hasSample);
 
   const navigate = (event: KeyboardEvent<HTMLDivElement>) => {
     const index = modules.indexOf(current);
@@ -49,9 +50,9 @@ export function ModuleDashboard({ onCollapse, widgetOrchestration }: {
         {current.id === 'calendar' ? <CalendarPanel />
           : current.id === 'telemetry' ? (
             <section className="system-panel" aria-label="System performance">
-              <div><span className="module-eyebrow">ON THIS PC</span><h2>Room to breathe.</h2><p>Live CPU and memory usage</p></div>
+              <div><span className="module-eyebrow">ON THIS PC</span><h2>Room to breathe.</h2><p>{hasSample ? 'Live CPU and memory usage' : 'Waiting for system data'}</p></div>
               {([['CPU', cpu], ['Memory', ram]] as const).map(([label, value]) => (
-                <div className="system-panel__metric" key={label}><div><span>{label}</span><strong>{Math.round(value)}<small>%</small></strong></div><meter min={0} max={100} value={value} aria-label={`${label} usage`} /></div>
+                <div className="system-panel__metric" key={label}><div><span>{label}</span><strong>{hasSample ? <>{Math.round(value)}<small>%</small></> : 'N/A'}</strong></div>{hasSample && <meter min={0} max={100} value={value} aria-label={`${label} usage`} />}</div>
               ))}
             </section>
           ) : <ExpandedState embedded selectedModule={current.id} onCollapse={onCollapse} widgetOrchestration={widgetOrchestration} />}
