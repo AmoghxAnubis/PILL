@@ -71,3 +71,4 @@
 .weather-panel__details dd { font-size: 11px; font-variant-numeric: tabular-nums; }
 .weather-panel .weather-panel__source { font-size: 9px; margin-top: 5px; }
 .weather-panel .weather-panel__error { color: #e69c95; font-size: 9px; max-height: 24px; overflow: auto; }
+.weather-panel .weather-panel__link { padding: 0; border-radius: 0; background: transparent; color: inherit; font-size: inherit; text-decoration: underline; }
