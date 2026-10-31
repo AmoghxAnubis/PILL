@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::OnceLock;
+use std::collections::HashMap;
 
 use tauri::{
     AppHandle,
@@ -40,6 +42,22 @@ pub enum IslandState {
     Compact,
     Expanded,
     Split,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+struct IslandDimensions {
+    width: f64,
+    height: f64,
+}
+
+// The frontend imports this same file. Startup must not use a second set of
+// dimensions that makes the first interaction jump or clip its contents.
+fn island_dimensions(state: &str) -> IslandDimensions {
+    static LAYOUT: OnceLock<HashMap<String, IslandDimensions>> = OnceLock::new();
+    LAYOUT.get_or_init(|| {
+        serde_json::from_str(include_str!("../../../shared/island-layout.json"))
+            .expect("Invalid shared island layout")
+    })[state]
 }
 
 /// Represents the calculated physical position of the island window.
@@ -102,6 +120,9 @@ fn resize_island(
     width: f64,
     height: f64,
 ) -> Result<(), String> {
+    if !width.is_finite() || !height.is_finite() || width <= 0.0 || height <= 0.0 {
+        return Err("Island dimensions must be positive and finite".to_string());
+    }
     let monitor = window
         .current_monitor()
         .map_err(|e| e.to_string())?
@@ -285,9 +306,9 @@ fn position_island_on_startup(
         let monitor_position = monitor.position();
         let scale_factor = monitor.scale_factor();
 
-        // Idle dimensions: 110x32 logical pixels.
-        let idle_width = 110.0;
-        let idle_height = 32.0;
+        let idle = island_dimensions("idle");
+        let idle_width = idle.width;
+        let idle_height = idle.height;
 
         let position =
             calculate_window_position(
@@ -312,6 +333,8 @@ fn position_island_on_startup(
             ),
         );
     }
+    // Avoid flashing at (0, 0) with bootstrap dimensions before positioning.
+    let _ = window.show();
 }
 
 #[cfg_attr(
@@ -409,6 +432,16 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shared_layout_covers_every_presentation() {
+        for state in ["idle", "compact", "expanded", "split"] {
+            let size = island_dimensions(state);
+            assert!(size.width.is_finite() && size.width > 0.0);
+            assert!(size.height.is_finite() && size.height > 0.0);
+        }
+        assert!(island_dimensions("expanded").height > island_dimensions("idle").height);
+    }
 
     #[test]
     fn parses_all_valid_island_states() {
