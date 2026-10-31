@@ -19,8 +19,8 @@ pub fn run() {
             tauri::generate_handler![
                 settings::load_settings,
                 settings::update_settings,
-                settings::reset_settings
-                , weather::search_weather_locations
+                settings::reset_settings,
+                weather::search_weather_locations
             ],
         )
         .run(tauri::generate_context!())
