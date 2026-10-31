@@ -58,6 +58,16 @@ describe('weather source lifecycle', () => {
     expect(useWeatherStore.getState().data).toEqual(latest);
   });
 
+  it('expires cached data rather than showing an indefinitely old reading', async () => {
+    const cached = snapshot();
+    call.mockResolvedValueOnce(cached).mockRejectedValue('Offline');
+    renderHook(useWeatherSource);
+    await flush();
+    vi.setSystemTime(Date.now() + 25 * 60 * 60_000);
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(useWeatherStore.getState()).toMatchObject({ status: 'error', data: null });
+  });
+
   it('stops refreshes and ignores an in-flight result when disabled', async () => {
     let finish!: (value: WeatherSnapshot) => void;
     call.mockResolvedValueOnce(null).mockImplementationOnce(() => new Promise<WeatherSnapshot>((resolve) => { finish = resolve; }) as ReturnType<typeof invoke>);
