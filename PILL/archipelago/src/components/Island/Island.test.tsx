@@ -102,8 +102,8 @@ vi.mock('../states/CompactState', () => ({
   ),
 }));
 
-vi.mock('../states/ExpandedState', () => ({
-  ExpandedState: ({
+vi.mock('../modules/ModuleDashboard', () => ({
+  ModuleDashboard: ({
     onCollapse,
   }: {
     onCollapse: () => void;
