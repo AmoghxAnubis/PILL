@@ -2,6 +2,14 @@
 
 Updated 31 October 2026 after reviewing both supplied videos and the current repository. Release numbers below are proposed milestones.
 
+## Implementation progress — 31 October 2026
+
+The first 0.2 development slice implements the shared transition queue and shared native/frontend geometry, a local idle clock, month calendar, module navigation, explicit view selection, session pinning, delayed collapse, keyboard controls, reduced-motion support and application of the existing dark/light/system theme preference. Media, focus and CPU/RAM views reuse the current native sources. Native startup positions the hidden window before showing it.
+
+Remaining 0.2 work: weather provider/configuration, context menu, additional theme/opacity/shape/scale settings and their persistence, idle hide/reveal, monitor placement preferences, tray/startup completion and Windows visual acceptance. The 0.3 live-signal and 0.4 assistant milestones remain planned. This slice does not represent a completed 0.2 release.
+
+Development: run npm install if necessary, then npm run tauri dev from PILL/archipelago to launch the native app. npm run dev serves only the web frontend. The first view is a clock; hover, click, or focus it and press Enter to open the dashboard. Arrow keys navigate module tabs, Pin keeps the dashboard open for the session, and Escape collapses it. Existing preferences remain managed by PILL Control.
+
 ## Product direction
 
 Evolve PILL into a useful, customizable Windows island, then add an optional local assistant through the same interface. The second video broadens the original draft: clock/calendar, weather, media visualization, game metrics, progress, and precise window behavior all need explicit implementation work.
@@ -36,7 +44,7 @@ The recording identifies the showcased software as Windhawk's Dynamic Island for
 
 The large wallpaper clock, dock/taskbar styling and separate desktop widgets are visible around the island. Their presence does not establish that they belong to its module. Keep those as separate scope decisions. Clipboard history, notifications and a file shelf are also not established by this clip.
 
-## Current implementation to preserve and extend
+## Baseline reviewed before implementation
 
 Source inspection establishes this baseline; it is not a substitute for Windows runtime testing.
 
@@ -154,4 +162,4 @@ Local actions must work with networking disabled after setup; online actions are
 - Measure latency, CPU/memory and capture overhead on a low-end and a typical supported PC. Establish thresholds from PILL's baseline; do not adopt unverified zero-CPU or frame-rate claims from the reference.
 - Check every video-evidence row against a reproducible end-to-end behavior. A visible setting alone does not establish delivery.
 
-This update covers planning and reference analysis. Application code has not been changed or runtime-tested as part of this review.
+The implementation progress section records delivered work. Reference analysis and automated checks do not establish Windows visual acceptance; that remains a separate release gate.
