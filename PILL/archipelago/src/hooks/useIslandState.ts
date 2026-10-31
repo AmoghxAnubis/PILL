@@ -22,7 +22,7 @@ export function useIslandState() {
   }, [hoverToExpand]);
 
   const handleMouseLeave = useCallback(() => {
-    if (!autoCollapse || useIslandStore.getState().pinned) return;
+    if (!autoCollapse || useIslandStore.getState().pinned || useIslandStore.getState().menuOpen) return;
     scheduleIslandCollapse(collapseDelayMs);
   }, [autoCollapse, collapseDelayMs]);
 
