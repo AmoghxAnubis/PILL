@@ -1,226 +1,36 @@
-/* ========================================
-   Island — Core Styles
-   Glassmorphism + Spring Animation Shell
-   ======================================== */
+@import '../modules/modules.css';
 
 .island-wrapper {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-
-  padding-top: 0;
-
-  pointer-events: none;
-  overflow: hidden;
+  position: fixed; inset: 0; display: flex; justify-content: center;
+  align-items: flex-start; pointer-events: none; overflow: hidden;
 }
-
 .island {
-  position: relative;
-
-  border-radius: 20px;
-  overflow: hidden;
-
-  cursor: default;
-  pointer-events: auto;
-
-  box-shadow:
-    0 2px 16px rgba(0, 0, 0, 0.5),
-    0 0 0 0.5px rgba(255, 255, 255, 0.08) inset;
+  --pill-bg: #101215; --pill-fg: #f4f5f7; --pill-muted: #9a9fa9;
+  --pill-accent: #b9e9c9; --pill-subtle: rgba(255,255,255,.055);
+  --pill-line: rgba(255,255,255,.09);
+  color: var(--pill-fg); color-scheme: dark;
+  position: relative; border-radius: 22px; overflow: hidden;
+  pointer-events: auto; cursor: default;
+  box-shadow: 0 4px 14px #0003, inset 0 0 0 1px var(--pill-line);
+  font-family: 'Segoe UI Variable', 'Segoe UI', sans-serif;
 }
-
-/* ========================================
-   Glassmorphism Background
-   ======================================== */
-
-.island__glass {
-  position: absolute;
-  inset: 0;
-
-  background: linear-gradient(
-    135deg,
-    rgba(18, 18, 22, 0.88) 0%,
-    rgba(28, 28, 36, 0.92) 50%,
-    rgba(18, 18, 22, 0.88) 100%
-  );
-
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-
-  border-radius: inherit;
-  z-index: 0;
+.island[data-theme="light"] {
+  --pill-bg: #f5f6f8; --pill-fg: #171c23; --pill-muted: #5c6471;
+  --pill-accent: #28643d; --pill-subtle: rgba(0,0,0,.045);
+  --pill-line: rgba(0,0,0,.1); color-scheme: light;
 }
-
-/* ========================================
-   Content
-   ======================================== */
-
-.island__content {
-  position: relative;
-
-  z-index: 1;
-
-  width: 100%;
-  height: 100%;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 4px 8px;
-
-  box-sizing: border-box;
-
-  color: rgba(255, 255, 255, 0.92);
-
-  font-family:
-    'Segoe UI Variable',
-    'Segoe UI',
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-
-  user-select: none;
-}
-
-/* ========================================
-   State-Specific Tweaks
-   ======================================== */
-
-.island--idle {
-  border-radius: 0 0 10px 10px;
-
-  /*
-   * The actual idle dimensions are controlled by
-   * ISLAND_DIMENSIONS in islandStore.ts.
-   *
-   * Keep this class purely visual so Framer Motion
-   * and the native Tauri window share the same geometry.
-   */
-  opacity: 0.35;
-
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.25),
-    0 0 0 0.5px rgba(255, 255, 255, 0.05) inset;
-
-  transition:
-    opacity 0.3s ease,
-    box-shadow 0.3s ease;
-}
-
-.island--idle:hover {
-  opacity: 0.9;
-
-  box-shadow:
-    0 2px 12px rgba(0, 0, 0, 0.35),
-    0 0 0 0.5px rgba(255, 255, 255, 0.08) inset;
-}
-
-.island--compact {
-  border-radius: 18px;
-  cursor: pointer;
-}
-
-.island--expanded {
-  border-radius: 22px;
-}
-
-.island--split {
-  border-radius: 18px;
-}
-
-/* ========================================
-   Idle Notch
-   ======================================== */
-
-.state-idle {
-  width: 44px;
-  height: 14px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  position: relative;
-  overflow: hidden;
-
-  pointer-events: none;
-}
-
-.state-idle__dot {
-  width: 4px;
-  height: 4px;
-
-  border-radius: 50%;
-
-  background: rgba(255, 255, 255, 0.55);
-
-  box-shadow:
-    0 0 6px rgba(255, 255, 255, 0.18);
-
-  opacity: 0.8;
-
-  transition:
-    width 0.18s ease,
-    height 0.18s ease,
-    opacity 0.18s ease,
-    background 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.island--idle:hover .state-idle__dot {
-  width: 6px;
-  height: 6px;
-
-  background: rgba(255, 255, 255, 0.8);
-
-  box-shadow:
-    0 0 8px rgba(255, 255, 255, 0.28);
-
-  opacity: 1;
-}
-
-/* ========================================
-   Idle Glass Treatment
-   ======================================== */
-
-.island--idle .island__glass {
-  background: rgba(18, 18, 22, 0.55);
-
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-}
-
-/* ========================================
-   Pulse Animation
-   Used for threshold alerts
-   ======================================== */
-
-@keyframes pulse-glow {
-  0%,
-  100% {
-    box-shadow:
-      0 2px 16px rgba(0, 0, 0, 0.5),
-      0 0 0 0.5px rgba(255, 255, 255, 0.08) inset;
-  }
-
-  50% {
-    box-shadow:
-      0 2px 24px rgba(239, 68, 68, 0.35),
-      0 0 0 1px rgba(239, 68, 68, 0.2) inset,
-      0 0 40px rgba(239, 68, 68, 0.15);
-  }
-}
-
-.island--alert {
-  animation: pulse-glow 2s ease-in-out infinite;
+.island__glass { position: absolute; inset: 0; background: var(--pill-bg); z-index: 0; border-radius: inherit; }
+.island__content { position: relative; z-index: 1; width: 100%; height: 100%; user-select: none; }
+.island__content > div { width: 100%; height: 100%; }
+.island--idle, .island--compact, .island--split { border-radius: 24px; cursor: pointer; }
+.island button { font: inherit; cursor: pointer; }
+.island button:focus-visible, .island [tabindex]:focus-visible { outline: 2px solid var(--pill-accent); outline-offset: -2px; }
+.island:focus-visible { outline: 2px solid var(--pill-accent); outline-offset: -3px; }
+.island .state-idle { width: 100%; height: 100%; display: flex; align-items: center; padding: 0 18px; gap: 10px; }
+.idle-clock__dot { width: 5px; height: 5px; border-radius: 50%; background: var(--pill-accent); flex: 0 0 auto; }
+.idle-clock__time { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.idle-clock__date { margin-left: auto; color: var(--pill-muted); font-size: 11px; white-space: nowrap; }
+.island[data-theme="light"] :is(.state-compact__label,.state-compact__media-title,.state-split__widget-label,.glance-metrics,.focus-timer__display,.state-expanded__media-title,.state-expanded__focus-time) { color: var(--pill-fg); }
+@media (prefers-reduced-motion: reduce) {
+  .island *, .island *::before, .island *::after { animation: none !important; transition: none !important; }
 }
