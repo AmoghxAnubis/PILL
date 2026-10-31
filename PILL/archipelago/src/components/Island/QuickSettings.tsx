@@ -16,7 +16,8 @@ export function QuickSettings({ onClose }: { onClose: () => void }) {
   const keyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') { event.stopPropagation(); onClose(); }
     if (event.key !== 'Tab') return;
-    const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled)'));
+    const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('*'))
+      .filter((element) => ['BUTTON', 'SELECT', 'INPUT'].includes(element.tagName) && !element.hasAttribute('disabled'));
     const first = controls[0], last = controls[controls.length - 1];
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
@@ -34,7 +35,7 @@ export function QuickSettings({ onClose }: { onClose: () => void }) {
         <label>Expand on click<input type="checkbox" checked={settings.behavior.clickToExpand} disabled={busy} onChange={(event) => save({ behavior: { clickToExpand: event.target.checked } })} /></label>
       </div>
       {error && <p className="quick-settings__error" role="alert">{error}</p>}
-      <footer><span role="status">{busy ? 'Saving…' : status === 'error' ? 'Not saved' : 'Saved locally'}</span><button type="button" onClick={() => { onClose(); openControl(); }}>Open PILL Control ↗</button></footer>
+      <footer><span role="status">{busy ? 'Saving…' : status === 'error' ? 'Not saved' : status === 'saved' ? 'Saved locally' : 'Preferences'}</span><button type="button" onClick={() => { onClose(); openControl(); }}>Open PILL Control ↗</button></footer>
     </div>
   );
 }
