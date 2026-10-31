@@ -1,12 +1,16 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModuleDashboard } from './ModuleDashboard';
 import { useIslandStore } from '../../store/islandStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useTelemetryStore } from '../../store/telemetryStore';
+import { invoke } from '@tauri-apps/api/core';
+import { mergeSettings } from '../../../../shared/settings/merge';
+import type { SettingsPatch } from '../../../../shared/settings/PillSettings';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue(undefined) }));
 beforeEach(() => {
+  vi.mocked(invoke).mockImplementation((_command, args) => Promise.resolve({ ...mergeSettings(useSettingsStore.getState().settings, args?.patch as SettingsPatch), revision: useSettingsStore.getState().settings.revision + 1 }) as ReturnType<typeof invoke>);
   useIslandStore.setState({ selectedModule: null, pinned: false });
   useSettingsStore.getState().resetSettings();
   useTelemetryStore.getState().clearTelemetry();
@@ -34,6 +38,8 @@ describe('module dashboard', () => {
   it('supports keyboard navigation and falls back when the selected module is disabled', () => {
     render(<ModuleDashboard onCollapse={() => {}} />);
     fireEvent.keyDown(screen.getByRole('tablist'), { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: 'Weather' })).toHaveFocus();
+    fireEvent.keyDown(screen.getByRole('tablist'), { key: 'ArrowRight' });
     expect(screen.getByRole('tab', { name: 'Media' })).toHaveFocus();
     expect(screen.getByRole('tabpanel')).toHaveAccessibleName('Media');
     act(() => useSettingsStore.getState().updateWidgets({ media: false }));
@@ -47,11 +53,13 @@ describe('module dashboard', () => {
     expect(screen.getByRole('button', { name: 'Start focus timer' })).toBeInTheDocument();
   });
 
-  it('pins and unpins the current session', () => {
+  it('persists pin and unpin choices', async () => {
     render(<ModuleDashboard onCollapse={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'Pin island open' }));
     expect(screen.getByRole('button', { name: 'Unpin island' })).toHaveAttribute('aria-pressed', 'true');
+    await waitFor(() => expect(useSettingsStore.getState().settings.behavior.pinExpanded).toBe(true));
     fireEvent.click(screen.getByRole('button', { name: 'Unpin island' }));
     expect(useIslandStore.getState().pinned).toBe(false);
+    await waitFor(() => expect(useSettingsStore.getState().settings.behavior.pinExpanded).toBe(false));
   });
 });
