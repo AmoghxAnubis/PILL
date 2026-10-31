@@ -6,6 +6,9 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { useTelemetryStore } from '../../store/telemetryStore';
 import { ExpandedState } from '../states/ExpandedState';
 import { CalendarPanel } from './CalendarPanel';
+import { WeatherPanel } from './WeatherPanel';
+import { cancelCollapse, transitionIsland } from '../../lib/islandCoordinator';
+import { persistPin } from '../../lib/settingsActions';
 
 export function ModuleDashboard({ onCollapse, widgetOrchestration }: {
   onCollapse: () => void;
@@ -20,6 +23,7 @@ export function ModuleDashboard({ onCollapse, widgetOrchestration }: {
   const cpu = useTelemetryStore((store) => store.cpu);
   const ram = useTelemetryStore((store) => store.ram);
   const hasSample = useTelemetryStore((store) => store.hasSample);
+  const settingsError = useSettingsStore((store) => store.saveError ?? store.loadError);
 
   const navigate = (event: KeyboardEvent<HTMLDivElement>) => {
     const index = modules.indexOf(current);
@@ -37,7 +41,8 @@ export function ModuleDashboard({ onCollapse, widgetOrchestration }: {
       <header className="module-dashboard__header">
         <div><span className="pill-wordmark">PILL<span aria-hidden="true">●</span></span><p>A little closer to your day</p></div>
         <div className="module-dashboard__actions">
-          <button type="button" className={pinned ? 'is-active' : ''} aria-label={pinned ? 'Unpin island' : 'Pin island open'} aria-pressed={pinned} onClick={() => useIslandStore.getState().setPinned(!pinned)} title={pinned ? 'Unpin island' : 'Keep open for this session'}>{pinned ? 'Pinned' : 'Pin'}</button>
+          <button type="button" aria-label="Quick settings" onClick={() => { cancelCollapse(); useIslandStore.getState().setMenuOpen(true); void transitionIsland('expanded'); }}>···</button>
+          <button type="button" className={pinned ? 'is-active' : ''} aria-label={pinned ? 'Unpin island' : 'Pin island open'} aria-pressed={pinned} onClick={() => persistPin(!pinned)} title={pinned ? 'Unpin island' : 'Keep expanded'}>{pinned ? 'Pinned' : 'Pin'}</button>
           <button type="button" aria-label="Collapse island" onClick={onCollapse}>×</button>
         </div>
       </header>
@@ -48,6 +53,7 @@ export function ModuleDashboard({ onCollapse, widgetOrchestration }: {
       </div>
       <div className="module-panel" id={`panel-${current.id}`} role="tabpanel" aria-labelledby={`tab-${current.id}`} tabIndex={0}>
         {current.id === 'calendar' ? <CalendarPanel />
+          : current.id === 'weather' ? <WeatherPanel />
           : current.id === 'telemetry' ? (
             <section className="system-panel" aria-label="System performance">
               <div><span className="module-eyebrow">ON THIS PC</span><h2>Room to breathe.</h2><p>{hasSample ? 'Live CPU and memory usage' : 'Waiting for system data'}</p></div>
@@ -57,7 +63,8 @@ export function ModuleDashboard({ onCollapse, widgetOrchestration }: {
             </section>
           ) : <ExpandedState embedded selectedModule={current.id} onCollapse={onCollapse} widgetOrchestration={widgetOrchestration} />}
       </div>
-      <footer className="module-dashboard__footer"><span className="status-dot" aria-hidden="true" />{current.id === 'calendar' ? 'Your local time' : current.id === 'media' ? 'Windows media session' : current.id === 'focusTimer' ? 'Make time for what matters' : 'System telemetry'}<span>Made for your desktop</span></footer>
+      {settingsError && <p className="quick-settings__error" role="alert">{settingsError}</p>}
+      <footer className="module-dashboard__footer"><span className="status-dot" aria-hidden="true" />{current.id === 'calendar' ? 'Your local time' : current.id === 'weather' ? 'Weather · Open-Meteo' : current.id === 'media' ? 'Windows media session' : current.id === 'focusTimer' ? 'Make time for what matters' : 'System telemetry'}<span>Made for your desktop</span></footer>
     </div>
   );
 }
