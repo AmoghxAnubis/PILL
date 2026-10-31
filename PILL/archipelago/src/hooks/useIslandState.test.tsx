@@ -18,7 +18,7 @@ import {
   DEFAULT_PILL_SETTINGS,
 } from '../../../shared/settings/PillSettings';
 
-import { useIslandStore } from '../store/islandStore';
+import { ISLAND_DIMENSIONS, useIslandStore } from '../store/islandStore';
 
 import { useWidgetStore } from '../store/widgetStore';
 
@@ -70,8 +70,7 @@ describe('useIslandState', () => {
     expect(invoke).toHaveBeenCalledWith(
       'resize_island',
       {
-        width: 360,
-        height: 140,
+        ...ISLAND_DIMENSIONS.expanded,
       },
     );
 
@@ -177,8 +176,7 @@ describe('useIslandState', () => {
     expect(invoke).toHaveBeenCalledWith(
       'resize_island',
       {
-        width: 360,
-        height: 140,
+        ...ISLAND_DIMENSIONS.expanded,
       },
     );
 
@@ -190,7 +188,8 @@ describe('useIslandState', () => {
     );
   });
 
-  it('transitions from compact to idle on mouse leave', async () => {
+  it('collapses from compact to idle after the configured leave delay', async () => {
+    vi.useFakeTimers();
     useIslandStore.setState({
       state: 'compact',
     });
@@ -201,6 +200,7 @@ describe('useIslandState', () => {
 
     await act(async () => {
       result.current.handleMouseLeave();
+      vi.advanceTimersByTime(DEFAULT_PILL_SETTINGS.behavior.collapseDelayMs);
     });
 
     expect(
@@ -210,8 +210,7 @@ describe('useIslandState', () => {
     expect(invoke).toHaveBeenCalledWith(
       'resize_island',
       {
-        width: 44,
-        height: 14,
+        ...ISLAND_DIMENSIONS.idle,
       },
     );
 
@@ -307,8 +306,7 @@ describe('useIslandState', () => {
     expect(invoke).toHaveBeenCalledWith(
       'resize_island',
       {
-        width: 360,
-        height: 140,
+        ...ISLAND_DIMENSIONS.expanded,
       },
     );
 
@@ -372,8 +370,7 @@ describe('useIslandState', () => {
     expect(invoke).toHaveBeenCalledWith(
       'resize_island',
       {
-        width: 44,
-        height: 14,
+        ...ISLAND_DIMENSIONS.idle,
       },
     );
 
