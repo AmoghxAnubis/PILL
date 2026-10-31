@@ -1,4 +1,5 @@
 import { useClock } from '../../hooks/useClock';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { openControl } from '../../lib/settingsActions';
 import { weatherDescription, windDirection } from '../../lib/weatherPresentation';
 import { matchesWeather } from '../../../../shared/weather/types';
@@ -24,7 +25,7 @@ export function WeatherPanel() {
       <dl className="weather-panel__details"><div><dt>Feels like</dt><dd>{Math.round(data.apparentTemperature)}°</dd></div><div><dt>Humidity</dt><dd>{Math.round(data.humidity)}%</dd></div><div><dt>Wind</dt><dd>{Math.round(data.windSpeed)} {data.unit === 'fahrenheit' ? 'mph' : 'km/h'} {windDirection(data.windDirection)}</dd></div></dl>
       <p className="weather-panel__source" role="status">{stale ? 'Cached · ' : ''}Updated {new Date(data.fetchedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}{weather.refreshing ? ' · Refreshing' : ''}</p>
       {weather.error && <p className="weather-panel__error">{weather.error}</p>}
-      <p className="weather-panel__source">Weather data: Open-Meteo · CC BY 4.0</p>
+      <p className="weather-panel__source">Weather data: <button type="button" className="weather-panel__link" onClick={() => { void openUrl('https://open-meteo.com/').catch(() => {}); }}>Open-Meteo</button> · <button type="button" className="weather-panel__link" onClick={() => { void openUrl('https://creativecommons.org/licenses/by/4.0/').catch(() => {}); }}>CC BY 4.0</button></p>
     </section>
   );
 }
