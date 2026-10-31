@@ -85,6 +85,7 @@ export function Island() {
     useWidgetOrchestrator();
 
   const {
+    transitionTo,
     handleMouseEnter,
     handleMouseLeave,
     handleClick,
@@ -158,7 +159,7 @@ export function Island() {
             handleCollapse();
           } else if (state !== 'expanded' && event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
             event.preventDefault();
-            handleClick();
+            void transitionTo('expanded');
           }
         }}
         onClick={
