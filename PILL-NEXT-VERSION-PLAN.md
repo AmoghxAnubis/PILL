@@ -4,11 +4,15 @@ Updated 31 October 2026 after reviewing both supplied videos and the current rep
 
 ## Implementation progress — 31 October 2026
 
-The first 0.2 development slice implements the shared transition queue and shared native/frontend geometry, a local idle clock, month calendar, module navigation, explicit view selection, session pinning, delayed collapse, keyboard controls, reduced-motion support and application of the existing dark/light/system theme preference. Media, focus and CPU/RAM views reuse the current native sources. Native startup positions the hidden window before showing it.
+The first 0.2 development slice implements the shared transition queue and shared native/frontend geometry, a local idle clock, month calendar, module navigation, explicit view selection, delayed collapse, keyboard controls and reduced-motion support. Media, focus and CPU/RAM views reuse the current native sources. Native startup positions the hidden window before showing it.
 
-Remaining 0.2 work: weather provider/configuration, context menu, additional theme/opacity/shape/scale settings and their persistence, idle hide/reveal, monitor placement preferences, tray/startup completion and Windows visual acceptance. The 0.3 live-signal and 0.4 assistant milestones remain planned. This slice does not represent a completed 0.2 release.
+The second slice adds a right-click quick-settings surface, persistent pin/theme/opacity/shape/scale/expansion preferences, shared version-2 settings migration and cross-process locked atomic updates. Control follows changes from the island without overwriting unrelated preferences. Weather includes city search with explicit result selection, Celsius/Fahrenheit and matching wind units, compact and expanded views, 15-minute refresh, bounded HTTPS requests, a 24-hour cache limit, exponential retry and visible cached/error states. Weather stays disabled until configured. A live native search and forecast request for the public example city Berlin passed.
 
-Development: run npm install if necessary, then npm run tauri dev from PILL/archipelago to launch the native app. npm run dev serves only the web frontend. The first view is a clock; hover, click, or focus it and press Enter to open the dashboard. Arrow keys navigate module tabs, Pin keeps the dashboard open for the session, and Escape collapses it. Existing preferences remain managed by PILL Control.
+Remaining 0.2 work: idle hide/reveal, monitor placement preferences, tray/startup completion, suspension of disabled legacy native providers and Windows visual acceptance. The 0.3 live-signal and 0.4 assistant milestones remain planned. This development preview is not a completed 0.2 release.
+
+Development: run npm install if necessary, then npm run tauri dev from PILL/archipelago to launch the native app. npm run dev serves only the web frontend. Hover, click, or focus the clock and press Enter to open the dashboard. Arrow keys navigate module tabs. Right-click, press Shift+F10, or use the quick-settings button to customize PILL. Pin is now saved; explicitly collapsing unpins it. Escape closes quick settings first, then collapses the dashboard. Use the rebuilt PILL Control Weather section to search for and select a city. Both preview applications must be updated together because settings now use version 2.
+
+Provider details, attribution, refresh behavior and manual acceptance checks are recorded in [the preview notes](docs/0.2-preview.md).
 
 ## Product direction
 
