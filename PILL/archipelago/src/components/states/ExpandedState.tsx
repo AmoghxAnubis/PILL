@@ -9,6 +9,8 @@ import { useFocusTimer } from '../../hooks/useFocusTimer';
 interface ExpandedStateProps {
   onCollapse: () => void;
   widgetOrchestration?: WidgetOrchestration;
+  selectedModule?: 'media' | 'focusTimer';
+  embedded?: boolean;
 }
 
 function formatMediaTime(seconds: number): string {
@@ -70,6 +72,8 @@ function getProgressPercentage(
 export function ExpandedState({
   onCollapse,
   widgetOrchestration,
+  selectedModule,
+  embedded = false,
 }: ExpandedStateProps) {
   const { media, hasMedia } = useMedia();
 
@@ -103,12 +107,10 @@ export function ExpandedState({
       : hasMedia;
 
   const showFocusTimer =
-    focusTimerSelected &&
-    focusTimerStatus !== 'idle';
+    selectedModule === 'focusTimer' || (!selectedModule && focusTimerSelected && focusTimerStatus !== 'idle');
 
   const showMedia =
-    mediaSelected &&
-    hasMedia;
+    (selectedModule ? selectedModule === 'media' : mediaSelected) && hasMedia;
 
   const progress = getProgressPercentage(
     media.position,
@@ -191,7 +193,7 @@ export function ExpandedState({
 
   return (
     <div className="state-expanded">
-      <div className="state-expanded__header">
+      {!embedded && <div className="state-expanded__header">
         <span className="state-expanded__title">
           {showFocusTimer
             ? 'Focus'
@@ -226,7 +228,7 @@ export function ExpandedState({
             ✕
           </button>
         </div>
-      </div>
+      </div>}
 
       {showFocusTimer ? (
         <div
@@ -278,7 +280,7 @@ export function ExpandedState({
                 className="state-expanded__control state-expanded__control--primary"
                 onClick={handleFocusToggle}
                 aria-label={
-                  isRunning
+                  focusTimerStatus === 'idle' ? 'Start focus timer' : isRunning
                     ? 'Pause focus timer'
                     : 'Resume focus timer'
                 }
