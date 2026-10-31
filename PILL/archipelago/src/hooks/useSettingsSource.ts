@@ -4,7 +4,6 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 
 import {
-  DEFAULT_PILL_SETTINGS,
   type PillSettings,
 } from '../../../shared/settings/PillSettings';
 
@@ -38,9 +37,7 @@ export function useSettingsSource(): void {
         );
 
         if (mounted) {
-          setSettings(
-            DEFAULT_PILL_SETTINGS,
-          );
+          useSettingsStore.setState({ loadError: String(error) });
         }
       });
 
