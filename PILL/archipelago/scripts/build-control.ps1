@@ -19,7 +19,7 @@ Write-Host 'Building PILL Control...'
 Push-Location $controlRoot
 
 try {
-    & npx tauri build --no-bundle
+    & npx.cmd tauri build --no-bundle
 
     if ($LASTEXITCODE -ne 0) {
         throw 'PILL Control release build failed.'
@@ -45,7 +45,7 @@ Push-Location (
 )
 
 try {
-    & npm run build
+    & npm.cmd run build
 
     if ($LASTEXITCODE -ne 0) {
         throw 'PILL frontend build failed.'
