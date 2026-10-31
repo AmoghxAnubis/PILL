@@ -10,7 +10,7 @@ import type { SettingsPatch } from '../../../../shared/settings/PillSettings';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue(undefined) }));
 beforeEach(() => {
-  vi.mocked(invoke).mockImplementation((_command, args) => Promise.resolve({ ...mergeSettings(useSettingsStore.getState().settings, args?.patch as SettingsPatch), revision: useSettingsStore.getState().settings.revision + 1 }) as ReturnType<typeof invoke>);
+  vi.mocked(invoke).mockImplementation((_command, args) => Promise.resolve({ ...mergeSettings(useSettingsStore.getState().settings, (args as { patch?: SettingsPatch } | undefined)?.patch ?? {}), revision: useSettingsStore.getState().settings.revision + 1 }) as ReturnType<typeof invoke>);
   useIslandStore.setState({ selectedModule: null, pinned: false });
   useSettingsStore.getState().resetSettings();
   useTelemetryStore.getState().clearTelemetry();
