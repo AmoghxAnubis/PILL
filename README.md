@@ -432,6 +432,8 @@ See [`LICENSE`](LICENSE) for the complete license text.
 
 PILL is an independent open-source Windows desktop project.
 
+dichik dichik
+
 ---
 
 <p align="center">
