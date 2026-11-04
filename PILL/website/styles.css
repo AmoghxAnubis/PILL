@@ -94,6 +94,7 @@ a {
 .site-footer,
 .hero,
 .intro,
+.release-section,
 .features-section,
 .control-section,
 .install-section,
@@ -105,6 +106,45 @@ a {
   );
   margin-inline: auto;
 }
+
+/* The preview's new features, shown as illustrative product moments. */
+.release-section { padding: 118px 0 100px; }
+.release-heading { display: grid; grid-template-columns: 1fr 0.48fr; align-items: end; gap: 40px; margin-bottom: 38px; }
+.release-heading h2 { margin: 0; font-size: clamp(38px, 5.2vw, 68px); line-height: 1.05; letter-spacing: -0.055em; }
+.release-heading h2 span { color: #8c8c9d; }
+.release-heading > p { max-width: 370px; margin: 0 0 5px; color: var(--muted-strong); font-size: 15px; line-height: 1.7; }
+.release-grid { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 14px; }
+.release-card { min-height: 390px; padding: 28px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 36px; border: 1px solid rgba(255,255,255,.1); border-radius: 24px; background: linear-gradient(145deg, #17141d, #0b0b10 70%); }
+.weather-card { background: radial-gradient(circle at 80% 90%, rgba(115,97,255,.18), transparent 45%), #101018; }
+.settings-card { background: radial-gradient(circle at 80% 90%, rgba(255,61,142,.13), transparent 45%), #101018; }
+.release-tag { color: #ff8dbb; font-size: 10px; font-weight: 800; letter-spacing: .16em; }
+.release-card h3 { margin: 18px 0 10px; font-size: 24px; letter-spacing: -.04em; }
+.release-card p { margin: 0; max-width: 32ch; color: var(--muted-strong); font-size: 14px; line-height: 1.65; }
+.calendar-demo, .weather-demo, .settings-demo { border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: rgba(3,3,7,.78); box-shadow: 0 18px 45px rgba(0,0,0,.28); }
+.calendar-demo { padding: 18px 20px; }
+.calendar-top { display: flex; justify-content: space-between; align-items: center; font-size: 10px; letter-spacing: .16em; color: #a7a3b3; }
+.calendar-top strong { color: white; font-size: 13px; letter-spacing: 0; }
+.calendar-week, .calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; align-items: center; }
+.calendar-week { margin-top: 18px; font-size: 9px; color: #777382; }
+.calendar-days { margin-top: 8px; font-size: 12px; }
+.calendar-days span { padding: 7px 0; }
+.calendar-days .today { border-radius: 10px; background: #ec438b; color: white; font-weight: 700; }
+.calendar-demo small { display: block; margin-top: 14px; color: #777382; font-size: 9px; letter-spacing: .12em; }
+.weather-demo { min-height: 150px; display: flex; align-items: center; gap: 22px; padding: 22px; }
+.weather-icon { font-size: 48px; color: #ffc47c; line-height: 1; }
+.weather-demo span, .weather-demo small { display: block; color: #aaa6b6; font-size: 10px; letter-spacing: .1em; }
+.weather-demo strong { display: block; margin: 3px 0; font-size: 44px; font-weight: 600; line-height: 1; }
+.weather-demo small { letter-spacing: 0; }
+.settings-demo { padding: 9px 16px; }
+.settings-demo > div { min-height: 43px; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #d6d3dc; font-size: 12px; }
+.settings-demo > div + div { border-top: 1px solid rgba(255,255,255,.07); }
+.theme-dots { display: flex; gap: 6px; }.theme-dots i { width: 14px; height: 14px; border-radius: 50%; background: #4a4a58; }.theme-dots i:nth-child(2) { background: #a173ff; }.theme-dots i:nth-child(3) { background: #e75c9a; }.theme-dots i:nth-child(4) { background: #638cff; }
+.setting-track { width: 65px; height: 4px; border-radius: 9px; background: linear-gradient(90deg, #ed659d 70%, #45414e 70%); }.setting-track i { display: block; width: 10px; height: 10px; margin: -3px 0 0 65%; border-radius: 50%; background: white; }
+.setting-switch { width: 29px; height: 17px; border-radius: 20px; background: #d94b8a; }.setting-switch::after { content: ''; display: block; width: 11px; height: 11px; margin: 3px 3px 3px auto; border-radius: 50%; background: white; }
+.release-note { margin: 22px 0 0; max-width: 850px; color: #aaa7b4; font-size: 12px; line-height: 1.7; }.release-note a { color: #f4bad3; text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid #ff8dbb; outline-offset: 4px; }
+@media (max-width: 900px) { .release-grid { grid-template-columns: 1fr 1fr; }.calendar-card { grid-column: 1 / -1; }.calendar-demo { max-width: 440px; width: 100%; } }
+@media (max-width: 600px) { .release-section { padding: 80px 0; }.release-heading { grid-template-columns: 1fr; gap: 20px; }.release-grid { grid-template-columns: 1fr; }.calendar-card { grid-column: auto; }.release-card { min-height: 330px; padding: 24px; } }
 
 .site-header {
   height: 82px;
