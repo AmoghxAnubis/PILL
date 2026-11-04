@@ -298,7 +298,7 @@ The workflow:
 4. Builds the PILL frontend.
 5. Verifies that the Git tag matches the application version.
 6. Builds the Windows NSIS installer.
-7. Creates a GitHub release draft.
+7. Publishes a GitHub preview release with the installer.
 
 For example:
 
