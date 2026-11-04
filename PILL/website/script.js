@@ -99,7 +99,7 @@ function advanceDemo() {
 }
 
 function startDemoTimer() {
-  if (demoTimer || demoPaused) {
+  if (demoTimer || demoPaused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     return;
   }
 
