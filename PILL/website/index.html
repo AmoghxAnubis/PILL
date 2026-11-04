@@ -34,6 +34,7 @@
 
     <nav class="nav">
       <a href="#features">Features</a>
+      <a href="#whats-new">What's new</a>
       <a href="#control">Control</a>
       <a href="#install">Install</a>
       <a
@@ -69,8 +70,8 @@
         </h1>
 
         <p class="hero-description">
-          PILL brings the useful parts of your desktop into one compact
-          dynamic island — media, telemetry, focus sessions and more.
+          Your clock, weather, media and focus tools live together in a
+          compact Windows island, ready when you need them.
         </p>
 
         <div class="hero-actions">
@@ -142,7 +143,7 @@
 
         <div class="visual-caption">
           <span id="visualState">IDLE</span>
-          <span>LIVE PRODUCT PREVIEW</span>
+          <span>ILLUSTRATIVE PREVIEW · CLICK TO EXPLORE</span>
         </div>
       </div>
     </section>
@@ -165,6 +166,33 @@
           when useful context appears.
         </p>
       </div>
+    </section>
+
+    <!-- WHAT'S NEW -->
+
+    <section class="release-section" id="whats-new" aria-labelledby="release-title">
+      <div class="release-heading">
+        <div>
+          <p class="section-kicker">NEW IN 0.2 · PREVIEW</p>
+          <h2 id="release-title">A little island.<br><span>A lot more useful.</span></h2>
+        </div>
+        <p>From a quick glance at the time to a closer look at the weather, the new dashboard brings everyday context within reach.</p>
+      </div>
+      <div class="release-grid">
+        <article class="release-card calendar-card">
+          <div class="release-card-copy"><span class="release-tag">01 / CALENDAR</span><h3>Make time for a glance.</h3><p>See the local time at rest, then expand to browse the month and find today.</p></div>
+          <div class="calendar-demo" aria-hidden="true"><div class="calendar-top"><span>NOVEMBER</span><strong>2026</strong></div><div class="calendar-week"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><div class="calendar-days"><span>2</span><span>3</span><span class="today">4</span><span>5</span><span>6</span><span>7</span><span>8</span></div><small>YOUR DAY, AT A GLANCE</small></div>
+        </article>
+        <article class="release-card weather-card">
+          <div class="release-card-copy"><span class="release-tag">02 / WEATHER</span><h3>Know what's outside.</h3><p>Choose a city in PILL Control for temperature, conditions, wind and humidity. Switch between metric and imperial units.</p></div>
+          <div class="weather-demo" aria-hidden="true"><div class="weather-icon">☀</div><div><span>YOUR CITY</span><strong>21°</strong><small>Conditions at a glance</small></div></div>
+        </article>
+        <article class="release-card settings-card">
+          <div class="release-card-copy"><span class="release-tag">03 / QUICK SETTINGS</span><h3>Make it yours.</h3><p>Right-click the island to change theme, shape, size and background opacity. Pin your view and pick how the island expands.</p></div>
+          <div class="settings-demo" aria-hidden="true"><div><span>Theme</span><span class="theme-dots"><i></i><i></i><i></i><i></i></span></div><div><span>Background</span><span class="setting-track"><i></i></span></div><div><span>Pin expanded</span><span class="setting-switch"></span></div></div>
+        </article>
+      </div>
+      <p class="release-note">Preview illustrations show example values. Weather is off until you select a city; data is provided by <a href="https://open-meteo.com/">Open-Meteo</a> and geocoding by <a href="https://www.geonames.org/">GeoNames</a>. <a href="https://github.com/AmoghxAnubis/PILL/blob/v0.2.0/docs/0.2-preview.md">Read the preview notes ↗</a></p>
     </section>
 
     <!-- FEATURES -->
@@ -313,19 +341,19 @@
           <div>
             <span>02</span>
             <strong>Behavior</strong>
-            <p>Configure expansion, collapse and fullscreen behavior.</p>
+            <p>Choose how the island expands and pin a view.</p>
           </div>
 
           <div>
             <span>03</span>
             <strong>Appearance</strong>
-            <p>Control theme and animation behavior.</p>
+            <p>Adjust theme, shape, scale and background opacity.</p>
           </div>
 
           <div>
             <span>04</span>
-            <strong>System</strong>
-            <p>Manage startup and tray preferences.</p>
+            <strong>Weather</strong>
+            <p>Choose your city and preferred units.</p>
           </div>
         </div>
       </div>
@@ -360,7 +388,7 @@
 
             <div class="control-nav">
               <span></span>
-              System
+            Weather
             </div>
           </div>
 
@@ -428,7 +456,7 @@
           <h3>Download PILL</h3>
 
           <p>
-            Grab the latest Windows installer from the PILL GitHub release.
+            Get the 0.2 preview installer, which includes both PILL and PILL Control.
           </p>
 
           <a
@@ -461,7 +489,7 @@
 
             <div class="terminal-body">
               <span class="terminal-prompt">$</span>
-              <span>winget install PILL</span>
+              <span>winget install PILL.PILL</span>
               <span class="terminal-cursor"></span>
             </div>
           </div>
@@ -513,6 +541,22 @@
               managing PILL's widgets, behavior, appearance and system
               preferences.
             </p>
+          </details>
+
+          <details>
+            <summary>
+              How do I use the new dashboard?
+              <span>+</span>
+            </summary>
+            <p>Hover or click the clock to expand. Use the tabs or arrow keys to move between Calendar, Weather, Media, Focus and System. Right-click for quick settings; Escape closes settings or collapses the island.</p>
+          </details>
+
+          <details>
+            <summary>
+              Is the 0.2 release finished?
+              <span>+</span>
+            </summary>
+            <p>It is a development preview. Some features, including idle hiding, monitor placement and tray/startup completion, are still in progress. Update PILL and PILL Control together.</p>
           </details>
 
           <details>
