@@ -114,7 +114,7 @@ jobs:
             - PILL Control
             - Windows desktop integration
           releaseDraft: false
-          prerelease: true
+          prerelease: ${{ github.ref_name == 'v0.2.0' }}
           generateReleaseNotes: true
           args: "--bundles nsis"
           
