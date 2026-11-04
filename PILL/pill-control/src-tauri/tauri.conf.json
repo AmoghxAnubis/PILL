@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "PILL Control",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "mainBinaryName": "PILL-Control",
   "identifier": "com.pill.control",
   "build": {
