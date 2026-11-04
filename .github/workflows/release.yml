@@ -92,8 +92,19 @@ jobs:
           releaseBody: |
             ## PILL ${{ github.ref_name }}
 
-            PILL is a lightweight Windows dynamic island for media, telemetry,
-            focus sessions, and contextual desktop information.
+            This development preview adds a clock and calendar, weather, tab navigation,
+            and persistent quick settings to the Windows desktop island.
+
+            - Configure weather by choosing a city in PILL Control. Weather data is
+              provided by [Open-Meteo](https://open-meteo.com/) and geocoding uses
+              [GeoNames](https://www.geonames.org/); see the preview notes for terms.
+            - Customize theme, shape, size, opacity, pinning, and pointer expansion.
+            - Navigate Calendar, Weather, Media, Focus, and System with mouse or keyboard.
+            - Settings are shared between PILL and PILL Control; update both together.
+
+            This is a preview. Windows visual acceptance and features including idle
+            hiding, monitor placement, and tray/startup completion remain outstanding.
+            See [preview notes](https://github.com/AmoghxAnubis/PILL/blob/v0.2.0/docs/0.2-preview.md).
 
             ### Windows
             Download the `-setup.exe` installer from the assets below.
@@ -102,8 +113,8 @@ jobs:
             - PILL
             - PILL Control
             - Windows desktop integration
-          releaseDraft: true
-          prerelease: false
+          releaseDraft: false
+          prerelease: true
           generateReleaseNotes: true
           args: "--bundles nsis"
           
