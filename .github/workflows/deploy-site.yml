@@ -1,4 +1,4 @@
-name: Deploy PILL Website
+﻿name: Deploy PILL Website
 
 on:
   push:
@@ -32,13 +32,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: PILL/website/package-lock.json
+
+      - name: Install website dependencies
+        working-directory: PILL/website
+        run: npm ci
+
+      - name: Build website
+        working-directory: PILL/website
+        run: npm run build
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
       - name: Upload website
         uses: actions/upload-pages-artifact@v4
         with:
-          path: "./PILL/website"
+          path: "./PILL/website/dist"
 
       - name: Deploy to GitHub Pages
         id: deployment
